@@ -9,7 +9,6 @@ void main() {
 
 class TripleMGarageApp extends StatelessWidget {
   @override
-  //change 1
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
