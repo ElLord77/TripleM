@@ -1,17 +1,21 @@
 // lib/screens/payment_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:gdp_app/screens/payment_confirmation_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String slotName;
   final String date;
   final String time;
+  final double amount; // The amount we are charging
 
-  PaymentScreen({
+  const PaymentScreen({
+    Key? key,
     required this.slotName,
     required this.date,
     required this.time,
-  });
+    required this.amount,
+  }) : super(key: key);
 
   @override
   _PaymentScreenState createState() => _PaymentScreenState();
@@ -41,7 +45,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // **Credit Card Display**
+              // Mock Credit Card Display
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(15),
@@ -62,18 +66,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       children: [
                         const Text(
                           '2221 0012 3412 3456',
-                          style: TextStyle(
-                            fontSize: 20,
-                            letterSpacing: 2,
-                            color: Colors.white,
-                          ),
+                          style: TextStyle(fontSize: 20, letterSpacing: 2, color: Colors.white),
                         ),
-                        // **Empty Container for Logo (Add Image Here)**
-                        Container(
-                          width: 40,
-                          height: 30,
-                          color: Colors.transparent, // Placeholder for Visa/Mastercard
-                        ),
+                        Container(width: 40, height: 30, color: Colors.transparent),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -86,13 +81,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
               const SizedBox(height: 20),
 
-              // **Payment Form Fields**
+              // Card Number
               _buildTextField(_cardNumberController, 'Enter card no.', 'xxxx xxxx xxxx xxxx'),
               const SizedBox(height: 15),
+              // Card Holder
               _buildTextField(_cardHolderNameController, 'Enter card Holder\'s Name', 'Enter Your Name'),
               const SizedBox(height: 15),
 
-              // **Expiry Date & CVV in Row**
+              // Expiry & CVV
               Row(
                 children: [
                   Expanded(
@@ -106,7 +102,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
               const SizedBox(height: 20),
 
-              // **Pay Now Button** (Bright Orange: #FF5733)
+              // PAY NOW BUTTON
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -124,9 +120,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
               const SizedBox(height: 20),
 
-              // **Slot Information**
+              // SLOT INFO
               Text(
-                'Slot: ${widget.slotName}\nDate: ${widget.date}\nTime: ${widget.time}',
+                'Slot: ${widget.slotName}\nDate: ${widget.date}\nTime: ${widget.time}\nAmount: \$${widget.amount}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, color: Colors.white70),
               ),
@@ -137,8 +133,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // **Reusable TextField Widget**
-  Widget _buildTextField(TextEditingController controller, String label, String hint, {bool obscureText = false}) {
+  // Reusable text field
+  Widget _buildTextField(
+      TextEditingController controller,
+      String label,
+      String hint, {
+        bool obscureText = false,
+      }) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
@@ -166,10 +167,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  // Payment logic
   void _onPayNow() {
     if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Processing payment...')),
+      );
+
+      // After collecting CC info, proceed to PaymentConfirmationScreen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentConfirmationScreen(
+            slotName: widget.slotName,
+            date: widget.date,
+            time: widget.time,
+            amount: widget.amount, // Pass the same amount
+          ),
+        ),
       );
     }
   }
