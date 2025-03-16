@@ -1,4 +1,5 @@
 // lib/screens/parking_slots2.dart
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:gdp_app/screens/booking_screen.dart';
@@ -18,22 +19,65 @@ class ParkingSlots2 extends StatelessWidget {
               fit: BoxFit.contain,
             ),
           ),
-          _buildSlotButton(context, 'Slot 1A', 150, 20),
-          _buildSlotButton(context, 'Slot 2A', 210, 20),
-          _buildSlotButton(context, 'Slot 3A', 275, 20),
-          _buildSlotButton(context, 'Slot 4A', 335, 20),
-          _buildSlotButton(context, 'Slot 5A', 400, 20),
-          _buildSlotButton(context, 'Slot 6A', 460, 20),
-          _buildSlotButton(context, 'Slot 7A', 525, 20),
-          _buildSlotButton(context, 'Slot 8A', 585, 20),
-          _buildSlotButton(context, 'Slot 1B', 150, 330),
-          _buildSlotButton(context, 'Slot 2B', 210, 330),
-          _buildSlotButton(context, 'Slot 3B', 275, 330),
-          _buildSlotButton(context, 'Slot 4B', 335, 330),
-          _buildSlotButton(context, 'Slot 5B', 400, 330),
-          _buildSlotButton(context, 'Slot 6B', 460, 330),
-          _buildSlotButton(context, 'Slot 7B', 525, 330),
-          _buildSlotButton(context, 'Slot 8B', 585, 330),
+          Positioned.fill(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Left column
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Example: 6 angled buttons on the left
+                      RotatedSlotButton(slotName: 'LeftSlot1', ),
+                      const SizedBox(height: 10,),
+                      RotatedSlotButton(slotName: 'LeftSlot2', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'LeftSlot3', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'LeftSlot4', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'LeftSlot5', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'LeftSlot6', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'LeftSlot7', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'LeftSlot8', ),
+                      const SizedBox(height: 100),
+
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 170),
+
+                // Right column
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      RotatedSlotButton(slotName: 'RightSlot1', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'RightSlot2', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'RightSlot3', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'RightSlot4', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'RightSlot5', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'RightSlot1', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'RightSlot2', ),
+                      const SizedBox(height: 10),
+                      RotatedSlotButton(slotName: 'RightSlot3', ),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -57,3 +101,35 @@ class ParkingSlots2 extends StatelessWidget {
     );
   }
 }
+
+class RotatedSlotButton extends StatelessWidget {
+  final String slotName;
+
+  const RotatedSlotButton({
+    Key? key,
+    required this.slotName,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Convert degrees to radians
+
+    return Padding(
+      padding: const EdgeInsets.all(2.0),
+      child: ElevatedButton(
+
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BookingScreen(slotName: slotName),
+            ),
+          );
+        },
+        child: Text(slotName),
+
+      ),
+    );
+  }
+}
+

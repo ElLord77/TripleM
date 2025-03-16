@@ -33,19 +33,26 @@ class ParkingSlots extends StatelessWidget {
                     children: [
                       // Example: 6 angled buttons on the left
                       RotatedSlotButton(slotName: 'LeftSlot1', angleDegrees: 30),
-                      const SizedBox(height: 55),
+                      const SizedBox(height: 20,),
                       RotatedSlotButton(slotName: 'LeftSlot2', angleDegrees: 30),
-                      const SizedBox(height: 60),
+                      const SizedBox(height: 20),
                       RotatedSlotButton(slotName: 'LeftSlot3', angleDegrees: 30),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 20),
                       RotatedSlotButton(slotName: 'LeftSlot4', angleDegrees: 30),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 20),
                       RotatedSlotButton(slotName: 'LeftSlot5', angleDegrees: 30),
-                      const SizedBox(height: 50),
+                      const SizedBox(height: 20),
                       RotatedSlotButton(slotName: 'LeftSlot6', angleDegrees: 30),
+                      const SizedBox(height: 20),
+                      RotatedSlotButton(slotName: 'LeftSlot7', angleDegrees: 30),
+                      const SizedBox(height: 20),
+                      RotatedSlotButton(slotName: 'LeftSlot8', angleDegrees: 30),
+                      const SizedBox(height: 90),
+
                     ],
                   ),
                 ),
+                const SizedBox(width: 100),
 
                 // Right column
                 Expanded(
@@ -53,14 +60,21 @@ class ParkingSlots extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       RotatedSlotButton(slotName: 'RightSlot1', angleDegrees: -30),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 20),
                       RotatedSlotButton(slotName: 'RightSlot2', angleDegrees: -30),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 20),
                       RotatedSlotButton(slotName: 'RightSlot3', angleDegrees: -30),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 20),
                       RotatedSlotButton(slotName: 'RightSlot4', angleDegrees: -30),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 20),
                       RotatedSlotButton(slotName: 'RightSlot5', angleDegrees: -30),
+                      const SizedBox(height: 20),
+                      RotatedSlotButton(slotName: 'RightSlot1', angleDegrees: -30),
+                      const SizedBox(height: 20),
+                      RotatedSlotButton(slotName: 'RightSlot2', angleDegrees: -30),
+                      const SizedBox(height: 20),
+                      RotatedSlotButton(slotName: 'RightSlot3', angleDegrees: -30),
+                      const SizedBox(height: 90),
                     ],
                   ),
                 ),
@@ -92,16 +106,21 @@ class RotatedSlotButton extends StatelessWidget {
     return Transform.rotate(
       angle: angleInRadians,
       alignment: Alignment.center,
-      child: ElevatedButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BookingScreen(slotName: slotName),
+      child: Padding(
+        padding: const EdgeInsets.all(3.0),
+        child: ElevatedButton(
+
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BookingScreen(slotName: slotName),
+              ),
+            );
+          },
+          child: Text(slotName),
+
             ),
-          );
-        },
-        child: Text(slotName),
       ),
     );
   }
