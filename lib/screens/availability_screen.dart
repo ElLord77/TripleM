@@ -19,11 +19,7 @@ class AvailabilityScreen extends StatelessWidget {
           children: [
             const Text(
               'Check availability',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFF9F9F9),
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFF9F9F9)),
             ),
             const SizedBox(height: 20),
             ElevatedButton(

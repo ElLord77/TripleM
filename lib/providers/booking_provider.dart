@@ -2,14 +2,16 @@
 
 import 'package:flutter/material.dart';
 
-/// The model for a booking, now with startTime and leavingTime.
+/// The model for a booking, now with docId for Firestore deletion.
 class Booking {
+  final String docId;
   final String slotName;
   final String date;
-  final String startTime;    // Arrival
-  final String leavingTime;  // Departure
+  final String startTime;
+  final String leavingTime;
 
   Booking({
+    required this.docId,
     required this.slotName,
     required this.date,
     required this.startTime,
@@ -33,21 +35,10 @@ class BookingProvider with ChangeNotifier {
 
   /// Remove a specific booking
   void removeBooking(Booking booking) {
-    // If the booking is the same as _currentBooking, clear it
-    if (_currentBooking != null &&
-        _currentBooking!.slotName == booking.slotName &&
-        _currentBooking!.date == booking.date &&
-        _currentBooking!.startTime == booking.startTime &&
-        _currentBooking!.leavingTime == booking.leavingTime) {
+    if (_currentBooking != null && _currentBooking!.docId == booking.docId) {
       _currentBooking = null;
     }
-
-    _upcomingBookings.removeWhere((b) =>
-    b.slotName == booking.slotName &&
-        b.date == booking.date &&
-        b.startTime == booking.startTime &&
-        b.leavingTime == booking.leavingTime);
-
+    _upcomingBookings.removeWhere((b) => b.docId == booking.docId);
     notifyListeners();
   }
 

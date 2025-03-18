@@ -10,31 +10,31 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Triple M Garage')),
+      appBar: AppBar(title: const Text('Triple M Garage')),
       drawer: AppDrawer(),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'Welcome to our garage',
               style: TextStyle(fontSize: 20, color: Color(0xFFF9F9F9)),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => SignInScreen()),
+                MaterialPageRoute(builder: (context) => const SignInScreen()),
               ),
-              child: Text('Sign in'),
+              child: const Text('Sign in'),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => RegisterScreen()),
+                MaterialPageRoute(builder: (context) => const RegisterScreen()),
               ),
-              child: Text('Register'),
+              child: const Text('Register'),
             ),
           ],
         ),

@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:gdp_app/providers/booking_provider.dart';
 import 'package:gdp_app/screens/availability_screen.dart';
 import 'package:gdp_app/utils/menu_utils.dart'; // If you have a 3-dot menu
@@ -31,7 +33,7 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Dashboard"),
         actions: [
-          buildOverflowMenu(context), // if you have a menu
+          buildOverflowMenu(context), // If you have a 3-dot menu
         ],
       ),
       body: SingleChildScrollView(
@@ -41,14 +43,20 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Text(
               "Welcome, $username!",
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 20),
 
-            // Current Booking
+            // Current Booking Card
             Card(
               color: Colors.white10,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(15),
                 child: Column(
@@ -56,10 +64,20 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     const Text(
                       "Current Booking",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    Text(currentBookingText, style: const TextStyle(fontSize: 16, color: Colors.white70)),
+                    Text(
+                      currentBookingText,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -69,7 +87,11 @@ class DashboardScreen extends StatelessWidget {
             // Upcoming Bookings
             const Text(
               "Upcoming Bookings",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 10),
             ListView.builder(
@@ -80,22 +102,25 @@ class DashboardScreen extends StatelessWidget {
                 final booking = bookingProvider.upcomingBookings[index];
                 return Card(
                   color: Colors.white10,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: ListTile(
                     leading: const Icon(Icons.calendar_today, color: Colors.white),
-                    title: Text("Slot: ${booking.slotName}", style: const TextStyle(color: Colors.white)),
+                    title: Text(
+                      "Slot: ${booking.slotName}",
+                      style: const TextStyle(color: Colors.white),
+                    ),
                     subtitle: Text(
-                      "Date: ${booking.date}\nArrival: ${booking.startTime}\nLeaving: ${booking.leavingTime}",
+                      "Date: ${booking.date}\n"
+                          "Arrival: ${booking.startTime}\n"
+                          "Leaving: ${booking.leavingTime}",
                       style: const TextStyle(color: Colors.white70),
                     ),
+                    // Cancel button for each upcoming booking
                     trailing: IconButton(
                       icon: const Icon(Icons.cancel, color: Colors.red),
-                      onPressed: () {
-                        bookingProvider.removeBooking(booking);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Booking cancelled.")),
-                        );
-                      },
+                      onPressed: () => _cancelBooking(context, booking),
                     ),
                   ),
                 );
@@ -103,7 +128,20 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Check Availability
+            // If there's a current booking, show a "Cancel" button
+            if (currentBooking != null)
+              Center(
+                child: ElevatedButton(
+                  onPressed: () => _cancelBooking(context, currentBooking),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                  ),
+                  child: const Text("Cancel Current Booking"),
+                ),
+              ),
+            const SizedBox(height: 20),
+
+            // Check Availability Button
             Center(
               child: ElevatedButton(
                 onPressed: () {
@@ -118,6 +156,24 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Directly cancel a booking from Firestore + local provider, no password prompt
+  Future<void> _cancelBooking(BuildContext context, Booking booking) async {
+    // 1) Delete from Firestore if docId is set
+    if (booking.docId.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(booking.docId)
+          .delete();
+    }
+
+    // 2) Remove from local provider
+    Provider.of<BookingProvider>(context, listen: false).removeBooking(booking);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Reservation cancelled.")),
     );
   }
 }

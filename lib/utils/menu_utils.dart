@@ -5,17 +5,14 @@ import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/sign_in_screen.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
-import 'package:gdp_app/screens/profile_screen.dart'; // If you have a ProfileScreen
 
-/// Returns a PopupMenuButton for the overflow menu
-/// with items: Home (Dashboard), Profile, Settings, and Logout.
 PopupMenuButton<String> buildOverflowMenu(BuildContext context) {
   return PopupMenuButton<String>(
     onSelected: (value) => _onMenuSelected(context, value),
     itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
       const PopupMenuItem<String>(
-        value: 'home',
-        child: Text('Home'),
+        value: 'dashboard',
+        child: Text('Dashboard'),
       ),
       const PopupMenuItem<String>(
         value: 'profile',
@@ -35,50 +32,30 @@ PopupMenuButton<String> buildOverflowMenu(BuildContext context) {
 
 void _onMenuSelected(BuildContext context, String value) {
   switch (value) {
-    case 'home':
-      _goToDashboard(context);
+    case 'dashboard':
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
       break;
-
     case 'profile':
-      _goToProfile(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile selected.")),
+      );
       break;
-
     case 'settings':
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Settings selected.")),
       );
       break;
-
     case 'logout':
-    // Clear user data
       Provider.of<UserProvider>(context, listen: false).setUsername("");
       Provider.of<UserProvider>(context, listen: false).setUserPassword("");
-
-      // Navigate to SignInScreen, removing all previous routes
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => SignInScreen()),
+        MaterialPageRoute(builder: (context) => const SignInScreen()),
             (Route<dynamic> route) => false,
       );
       break;
   }
-}
-
-void _goToDashboard(BuildContext context) {
-  final userProvider = Provider.of<UserProvider>(context, listen: false);
-  final username = userProvider.username; // greet them by name/email
-
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => DashboardScreen(username: username),
-    ),
-  );
-}
-
-void _goToProfile(BuildContext context) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => const ProfileScreen()),
-  );
 }

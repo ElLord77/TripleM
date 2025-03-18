@@ -4,19 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:gdp_app/providers/booking_provider.dart';
-import 'package:gdp_app/screens/payment_confirmation_screen.dart';
-
-// Import your FirestoreService
-import 'package:gdp_app/services/firestore_service.dart';
-// Import your UserProvider (if you have one) to get userId
 import 'package:gdp_app/providers/user_provider.dart';
+import 'package:gdp_app/screens/payment_confirmation_screen.dart';
+import 'package:gdp_app/services/firestore_service.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String slotName;
   final String date;
   final String startTime;
   final String leavingTime;
-  final double amount; // base or fallback amount
+  final double amount;
 
   const PaymentScreen({
     Key? key,
@@ -33,6 +30,7 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   final _formKey = GlobalKey<FormState>();
+
   final _cardNumberController = TextEditingController();
   final _cardHolderNameController = TextEditingController();
   final _expiryDateController = TextEditingController();
@@ -43,7 +41,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   void initState() {
     super.initState();
-    _calculatedCost = computeParkingCost(widget.startTime, widget.leavingTime);
+    _calculatedCost = _computeParkingCost(widget.startTime, widget.leavingTime);
   }
 
   @override
@@ -55,45 +53,43 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.dispose();
   }
 
-  DateTime? parseTime(String timeString) {
-    // For 12-hour format like "10:00 AM"
+  DateTime? _parseTime(String timeString) {
     try {
-      final format = DateFormat("HH:mm"); // 24-hour format
-      return format.parse(timeString);
+      print("Trying to parse: '$timeString'");
+      final format = DateFormat("h:mm a");
+      final parsed = format.parse(timeString);
+      print("Parsed = $parsed");
+      return parsed;
     } catch (e) {
+      print("parseTime error: $e");
       return null;
     }
   }
 
-  double computeParkingCost(String startTime, String leavingTime) {
-    final start = parseTime(startTime);
-    final leave = parseTime(leavingTime);
+  double _computeParkingCost(String startTime, String leavingTime) {
+    final start = _parseTime(startTime);
+    final leave = _parseTime(leavingTime);
+
     if (start == null || leave == null) return widget.amount;
 
     final diff = leave.difference(start);
     final hours = diff.inMinutes / 60.0;
-
-    // 1 hr => 20 pounds
     double cost = hours * 20.0;
-    if (cost < 0) cost = 0.0; // if leaving time < start time
+    if (cost < 0) cost = 0.0;
     return cost;
   }
 
-  /// Called when the user taps "Pay Now"
   Future<void> _onPayNow() async {
     if (_formKey.currentState!.validate()) {
-      // Show a "processing" message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Processing payment...')),
       );
 
-      // If you have a UserProvider storing user info:
       final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final userId = userProvider.username; // or an actual unique ID
+      final userId = userProvider.username;
 
       try {
-        // 1. Reserve the slot in Firestore to prevent double-booking
-        await FirestoreService().reserveSlot(
+        final docId = await FirestoreService().reserveSlot(
           slotName: widget.slotName,
           date: widget.date,
           startTime: widget.startTime,
@@ -101,8 +97,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           userId: userId,
         );
 
-        // 2. Add the booking locally to BookingProvider (optional)
         final booking = Booking(
+          docId: docId,
           slotName: widget.slotName,
           date: widget.date,
           startTime: widget.startTime,
@@ -110,7 +106,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
         );
         Provider.of<BookingProvider>(context, listen: false).addBooking(booking);
 
-        // 3. Navigate to PaymentConfirmationScreen with the computed cost
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -124,7 +119,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
         );
       } catch (e) {
-        // If doc already exists => "Slot already booked!"
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),
         );
@@ -138,10 +132,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F3460),
-        title: const Text(
-          'Payment Method',
-          style: TextStyle(color: Color(0xFFF9F9F9)),
-        ),
+        title: const Text('Payment Method', style: TextStyle(color: Color(0xFFF9F9F9))),
         centerTitle: true,
         elevation: 0,
       ),
@@ -152,7 +143,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Example credit card display
+              // Mock credit card display
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(15),
@@ -163,26 +154,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Text(
-                      'business',
-                      style: TextStyle(fontSize: 16, color: Colors.white54),
-                    ),
+                    Text('business', style: TextStyle(fontSize: 16, color: Colors.white54)),
                     SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '2221 0012 3412 3456',
-                          style: TextStyle(fontSize: 20, letterSpacing: 2, color: Colors.white),
-                        ),
+                        Text('2221 0012 3412 3456',
+                            style: TextStyle(fontSize: 20, letterSpacing: 2, color: Colors.white)),
                         SizedBox(width: 40, height: 30),
                       ],
                     ),
                     SizedBox(height: 10),
-                    Text(
-                      '12/23      Lee M. Cardholder',
-                      style: TextStyle(fontSize: 14, color: Colors.white70),
-                    ),
+                    Text('12/23      Lee M. Cardholder',
+                        style: TextStyle(fontSize: 14, color: Colors.white70)),
                   ],
                 ),
               ),

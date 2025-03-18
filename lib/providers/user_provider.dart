@@ -3,21 +3,18 @@
 import 'package:flutter/material.dart';
 
 class UserProvider with ChangeNotifier {
-  // Example default values
   String _username = "Homoss";
   String _userPassword = "123456";
   String _fullName = "John Doe";
   String _phoneNumber = "";
   String _address = "";
 
-  // GETTERS
   String get username => _username;
   String get userPassword => _userPassword;
   String get fullName => _fullName;
   String get phoneNumber => _phoneNumber;
   String get address => _address;
 
-  // SETTERS
   void setUsername(String username) {
     _username = username;
     notifyListeners();
