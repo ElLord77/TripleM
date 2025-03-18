@@ -5,12 +5,10 @@ import 'package:gdp_app/screens/payment_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   final String slotName;
-  final String userPassword;
 
   const BookingScreen({
     Key? key,
     required this.slotName,
-    required this.userPassword,
   }) : super(key: key);
 
   @override
@@ -64,6 +62,8 @@ class _BookingScreenState extends State<BookingScreen> {
               style: const TextStyle(fontSize: 20, color: Color(0xFFF9F9F9)),
             ),
             const SizedBox(height: 20),
+
+            // Date
             TextField(
               controller: _dateController,
               decoration: InputDecoration(
@@ -77,6 +77,8 @@ class _BookingScreenState extends State<BookingScreen> {
               style: const TextStyle(color: Color(0xFFF9F9F9)),
             ),
             const SizedBox(height: 20),
+
+            // Time
             TextField(
               controller: _timeController,
               decoration: InputDecoration(
@@ -90,9 +92,10 @@ class _BookingScreenState extends State<BookingScreen> {
               style: const TextStyle(color: Color(0xFFF9F9F9)),
             ),
             const SizedBox(height: 20),
+
             ElevatedButton(
               onPressed: () {
-                // Example payment amount
+                // Example: pass a fixed payment amount
                 double paymentAmount = 15.0;
 
                 Navigator.push(
@@ -103,7 +106,6 @@ class _BookingScreenState extends State<BookingScreen> {
                       date: _dateController.text,
                       time: _timeController.text,
                       amount: paymentAmount,
-                      userPassword: widget.userPassword,
                     ),
                   ),
                 );

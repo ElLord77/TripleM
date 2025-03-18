@@ -5,15 +5,16 @@ import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/sign_in_screen.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
+import 'package:gdp_app/screens/profile_screen.dart'; // If you have a ProfileScreen
 
 /// Returns a PopupMenuButton for the overflow menu
-/// with items: Dashboard, Profile, Settings, and Logout.
+/// with items: Home (Dashboard), Profile, Settings, and Logout.
 PopupMenuButton<String> buildOverflowMenu(BuildContext context) {
   return PopupMenuButton<String>(
     onSelected: (value) => _onMenuSelected(context, value),
     itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
       const PopupMenuItem<String>(
-        value: 'dashboard',
+        value: 'home',
         child: Text('Home'),
       ),
       const PopupMenuItem<String>(
@@ -32,17 +33,14 @@ PopupMenuButton<String> buildOverflowMenu(BuildContext context) {
   );
 }
 
-/// Handles the selection of menu items.
 void _onMenuSelected(BuildContext context, String value) {
   switch (value) {
-    case 'dashboard':
+    case 'home':
       _goToDashboard(context);
       break;
 
     case 'profile':
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Profile selected.")),
-      );
+      _goToProfile(context);
       break;
 
     case 'settings':
@@ -67,16 +65,20 @@ void _onMenuSelected(BuildContext context, String value) {
 }
 
 void _goToDashboard(BuildContext context) {
-  // If you need user credentials from a UserProvider:
   final userProvider = Provider.of<UserProvider>(context, listen: false);
+  final username = userProvider.username; // greet them by name/email
 
   Navigator.pushReplacement(
     context,
     MaterialPageRoute(
-      builder: (context) => DashboardScreen(
-        username: userProvider.username,
-        userPassword: userProvider.userPassword,
-      ),
+      builder: (context) => DashboardScreen(username: username),
     ),
+  );
+}
+
+void _goToProfile(BuildContext context) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const ProfileScreen()),
   );
 }

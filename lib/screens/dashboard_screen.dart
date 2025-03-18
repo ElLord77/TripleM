@@ -3,18 +3,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/booking_provider.dart';
+import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/availability_screen.dart';
-import 'package:gdp_app/utils/menu_utils.dart'; // If you have a 3-dot menu
-import 'package:gdp_app/providers/user_provider.dart'; // If you need userPassword from here
+import 'package:gdp_app/utils/menu_utils.dart';
 
 class DashboardScreen extends StatelessWidget {
   final String username;
-  final String userPassword;
 
   const DashboardScreen({
     Key? key,
     this.username = "User",
-    required this.userPassword,
   }) : super(key: key);
 
   @override
@@ -30,7 +28,6 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Home"),
         actions: [
-          // If you're using a 3-dot menu:
           buildOverflowMenu(context),
         ],
       ),
@@ -48,13 +45,10 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Current Booking Card
+            // Current Booking
             Card(
               color: Colors.white10,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               child: Padding(
                 padding: const EdgeInsets.all(15),
                 child: Column(
@@ -62,11 +56,7 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     const Text(
                       "Current Booking",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -78,18 +68,12 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Upcoming Bookings Section
+            // Upcoming Bookings
             const Text(
               "Upcoming Bookings",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 10),
-
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -98,34 +82,20 @@ class DashboardScreen extends StatelessWidget {
                 final booking = bookingProvider.upcomingBookings[index];
                 return Card(
                   color: Colors.white10,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   child: ListTile(
                     leading: const Icon(Icons.calendar_today, color: Colors.white),
-                    title: Text(
-                      "Slot: ${booking.slotName}",
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    subtitle: Text(
-                      "Date: ${booking.date}\nTime: ${booking.time}",
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                    // Cancel a specific booking
+                    title: Text("Slot: ${booking.slotName}", style: const TextStyle(color: Colors.white)),
+                    subtitle: Text("Date: ${booking.date}\nTime: ${booking.time}", style: const TextStyle(color: Colors.white70)),
                     trailing: IconButton(
                       icon: const Icon(Icons.cancel, color: Colors.red),
-                      onPressed: () {
-                        // Prompt for password before canceling
-                        _showCancelBookingDialog(context, booking);
-                      },
+                      onPressed: () => _showCancelBookingDialog(context, booking),
                     ),
                   ),
                 );
               },
             ),
             const SizedBox(height: 20),
-
-            // Example Quick Access or other UI
             Center(
               child: ElevatedButton(
                 onPressed: () {
@@ -143,7 +113,6 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  /// Show a dialog to confirm password before canceling
   void _showCancelBookingDialog(BuildContext context, Booking booking) {
     final TextEditingController _cancelPasswordController = TextEditingController();
     showDialog(
@@ -166,18 +135,17 @@ class DashboardScreen extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text("Cancel"),
             ),
             TextButton(
               onPressed: () {
-                // Check if password matches the user's password
-                if (_cancelPasswordController.text.trim() == userPassword.trim()) {
-                  // Cancel only the selected booking
-                  Provider.of<BookingProvider>(context, listen: false).removeBooking(booking);
+                // Always fetch the current password from the provider
+                final userProvider = Provider.of<UserProvider>(context, listen: false);
+                final currentPassword = userProvider.userPassword.trim();
 
+                if (_cancelPasswordController.text.trim() == currentPassword) {
+                  Provider.of<BookingProvider>(context, listen: false).removeBooking(booking);
                   Navigator.of(dialogContext).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Booking cancelled.")),

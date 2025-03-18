@@ -14,8 +14,6 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  // Controllers for email and password fields
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -26,26 +24,17 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
-  // Validate the form, store user data, and navigate to DashboardScreen.
   void _signIn() {
     if (_formKey.currentState!.validate()) {
-      final String storedPassword = _passwordController.text.trim();
-      final String email = _emailController.text.trim();
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      userProvider.setUsername(_emailController.text.trim());
+      userProvider.setUserPassword(_passwordController.text.trim());
 
-      // Debug print
-      print('SignIn password: "$storedPassword"');
-
-      // Save the user details in the UserProvider
-      Provider.of<UserProvider>(context, listen: false).setUsername(email);
-      Provider.of<UserProvider>(context, listen: false).setUserPassword(storedPassword);
-
-      // Navigate to DashboardScreen, passing the trimmed values
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => DashboardScreen(
-            username: email,
-            userPassword: storedPassword,
+            username: userProvider.username, // greet them by email/username
           ),
         ),
       );
@@ -69,21 +58,16 @@ class _SignInScreenState extends State<SignInScreen> {
                 controller: _emailController,
                 decoration: InputDecoration(
                   labelText: "Email",
-                  labelStyle: TextStyle(color: Color(0xFFF9F9F9)),
                   hintText: "Enter your email",
-                  hintStyle: TextStyle(color: Color(0xFFF9F9F9).withOpacity(0.7)),
                   filled: true,
                   fillColor: Colors.white10,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                style: TextStyle(color: Color(0xFFF9F9F9)),
-                keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return "Please enter your email";
                   }
+                  // Basic email regex
                   if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(value)) {
                     return "Please enter a valid email address";
                   }
@@ -97,16 +81,11 @@ class _SignInScreenState extends State<SignInScreen> {
                 controller: _passwordController,
                 decoration: InputDecoration(
                   labelText: "Password",
-                  labelStyle: TextStyle(color: Color(0xFFF9F9F9)),
                   hintText: "Enter your password",
-                  hintStyle: TextStyle(color: Color(0xFFF9F9F9).withOpacity(0.7)),
                   filled: true,
                   fillColor: Colors.white10,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                style: TextStyle(color: Color(0xFFF9F9F9)),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -125,62 +104,32 @@ class _SignInScreenState extends State<SignInScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE94560),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
                   onPressed: _signIn,
-                  child: Text(
-                    "Sign In",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: Text("Sign In"),
                 ),
               ),
               SizedBox(height: 10),
 
-              // Forgot Password and Register Buttons
+              // Forgot Password and Register
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Forgot Password Button
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
+                      Navigator.push(context,
                         MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
                       );
                     },
-                    child: Text(
-                      "Forgot Password?",
-                      style: TextStyle(
-                        color: const Color(0xFFE94560),
-                        fontSize: 14,
-                      ),
-                    ),
+                    child: Text("Forgot Password?"),
                   ),
-                  // New User / Register Button
                   TextButton(
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => RegisterScreen(),
-                        ),
+                        MaterialPageRoute(builder: (context) => RegisterScreen()),
                       );
                     },
-                    child: Text(
-                      "New User? Register",
-                      style: TextStyle(
-                        color: const Color(0xFFE94560),
-                        fontSize: 14,
-                      ),
-                    ),
+                    child: Text("New User? Register"),
                   ),
                 ],
               ),
