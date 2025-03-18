@@ -6,6 +6,7 @@ import 'package:gdp_app/screens/sign_in_screen.dart';
 import 'package:gdp_app/screens/register_screen.dart';
 
 class HomeScreen extends StatelessWidget {
+  const HomeScreen({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Scaffold(

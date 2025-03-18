@@ -1,43 +1,76 @@
 // lib/screens/sign_in_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+
+// Import your providers and dashboard
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
-import 'package:gdp_app/screens/register_screen.dart';
-import 'package:gdp_app/screens/forgot_password_screen.dart';
 
 class SignInScreen extends StatefulWidget {
+  const SignInScreen({Key? key}) : super(key: key);
+
   @override
   _SignInScreenState createState() => _SignInScreenState();
 }
 
 class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
+
+  // Controllers for email/password fields
+  final TextEditingController _emailController    = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  void _signIn() {
+  Future<void> _onSignIn() async {
     if (_formKey.currentState!.validate()) {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      userProvider.setUsername(_emailController.text.trim());
-      userProvider.setUserPassword(_passwordController.text.trim());
+      try {
+        // 1) Sign in with FirebaseAuth
+        UserCredential userCredential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DashboardScreen(
-            username: userProvider.username, // greet them by email/username
+        // 2) Get the current user's UID
+        String uid = userCredential.user!.uid;
+
+        // 3) Fetch the user's doc from /users/{uid}
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
+
+        Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
+        if (data != null) {
+          // 4) Store user data in UserProvider
+          final userProvider = Provider.of<UserProvider>(context, listen: false);
+          userProvider.setUsername(data['email'] ?? '');
+          userProvider.setFullName(data['fullName'] ?? '');
+          // Add more fields if you have them
+        }
+
+        // 5) Navigate to DashboardScreen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DashboardScreen(
+              username: _emailController.text.trim(),
+            ),
           ),
-        ),
-      );
+        );
+      } on FirebaseAuthException catch (e) {
+        // If sign in fails (e.g., wrong password, user not found)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Error during sign in')),
+        );
+      } catch (e) {
+        // Any other error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     }
   }
 
@@ -45,10 +78,10 @@ class _SignInScreenState extends State<SignInScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Sign In"),
+        title: const Text("Sign In"),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
@@ -56,80 +89,57 @@ class _SignInScreenState extends State<SignInScreen> {
               // Email Field
               TextFormField(
                 controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: "Email",
-                  hintText: "Enter your email",
-                  filled: true,
-                  fillColor: Colors.white10,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+                decoration: const InputDecoration(labelText: "Email"),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return "Please enter your email";
                   }
-                  // Basic email regex
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(value)) {
-                    return "Please enter a valid email address";
-                  }
+                  // optional: add email format check
                   return null;
                 },
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Password Field
               TextFormField(
                 controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  hintText: "Enter your password",
-                  filled: true,
-                  fillColor: Colors.white10,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+                decoration: const InputDecoration(labelText: "Password"),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return "Please enter your password";
                   }
-                  if (value.length < 6) {
-                    return "Password must be at least 6 characters";
-                  }
                   return null;
                 },
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
 
               // Sign In Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _signIn,
-                  child: Text("Sign In"),
+                  onPressed: _onSignIn,
+                  child: const Text("Sign In"),
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-              // Forgot Password and Register
+              // (Optional) Forgot Password / Register Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
                     onPressed: () {
-                      Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
-                      );
+                      // e.g. Navigator.push to ForgotPasswordScreen
                     },
-                    child: Text("Forgot Password?"),
+                    child: const Text("Forgot Password?"),
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => RegisterScreen()),
-                      );
+                      // e.g. Navigator.pushReplacement to RegisterScreen
                     },
-                    child: Text("New User? Register"),
+                    child: const Text("New User? Register"),
                   ),
                 ],
               ),
