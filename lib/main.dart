@@ -1,22 +1,37 @@
-import 'package:flutter/material.dart';
+// lib/main.dart
 
-// Import all other pages/screens:
-import 'screens/home_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:gdp_app/providers/booking_provider.dart';
+import 'package:gdp_app/providers/user_provider.dart';
+import 'package:gdp_app/screens/home_screen.dart';
 
 void main() {
-  runApp(TripleMGarageApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<BookingProvider>(
+          create: (_) => BookingProvider(),
+        ),
+        ChangeNotifierProvider<UserProvider>(
+          create: (_) => UserProvider(),
+        ),
+      ],
+      child: TripleMGarageApp(),
+    ),
+  );
 }
 
 class TripleMGarageApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Triple M Garage',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSwatch(
-          primarySwatch: Colors.deepPurple, // Choose a suitable MaterialColor
+          primarySwatch: Colors.deepPurple,
           brightness: Brightness.dark,
         ).copyWith(
           secondary: const Color(0xFFE94560),
@@ -46,7 +61,7 @@ class TripleMGarageApp extends StatelessWidget {
           ),
         ),
       ),
-      home: HomeScreen(), // Start at HomeScreen
+      home: HomeScreen(),
     );
   }
 }

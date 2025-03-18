@@ -8,6 +8,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
   final String date;
   final String time;
   final double amount;
+  final String userPassword;
 
   const PaymentConfirmationScreen({
     Key? key,
@@ -15,6 +16,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
     required this.date,
     required this.time,
     required this.amount,
+    required this.userPassword,
   }) : super(key: key);
 
   @override
@@ -44,7 +46,6 @@ class PaymentConfirmationScreen extends StatelessWidget {
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
-                  // Navigate to the "Thank You" screen
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -52,6 +53,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
                         slotName: slotName,
                         date: date,
                         time: time,
+                        userPassword: userPassword,
                       ),
                     ),
                   );

@@ -3,10 +3,17 @@
 import 'package:flutter/material.dart';
 import 'package:gdp_app/screens/parking_slots.dart';
 import 'package:gdp_app/screens/parking_slots2.dart';
+import 'package:provider/provider.dart';
+import 'package:gdp_app/providers/user_provider.dart';
 
 class AvailabilityScreen extends StatelessWidget {
+  const AvailabilityScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
+    // If userPassword is in UserProvider, we can retrieve it here:
+    final userPassword = Provider.of<UserProvider>(context).userPassword;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Triple M Garage'),
@@ -23,7 +30,7 @@ class AvailabilityScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ParkingSlots()),
+                MaterialPageRoute(builder: (context) => ParkingSlots(userPassword: userPassword)),
               ),
               child: Text('Level 1'),
             ),
@@ -31,7 +38,7 @@ class AvailabilityScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ParkingSlots2()),
+                MaterialPageRoute(builder: (context) => ParkingSlots2(userPassword: userPassword)),
               ),
               child: Text('Level 2'),
             ),

@@ -1,8 +1,13 @@
+// lib/screens/parking_slots2.dart
+
 import 'package:flutter/material.dart';
 import 'package:gdp_app/screens/booking_screen.dart';
 
 class ParkingSlots2 extends StatelessWidget {
-  final String imagePath = 'images/2.jpg'; // Your Level 2 image path
+  final String userPassword;
+  final String imagePath = 'images/2.jpg';
+
+  const ParkingSlots2({Key? key, required this.userPassword}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -25,49 +30,46 @@ class ParkingSlots2 extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Example: 6 angled buttons on the left
-                      RotatedSlotButton(slotName: 'C1', ),
-                      const SizedBox(height: 1,),
-                      RotatedSlotButton(slotName: 'C2', ),
+                      RotatedSlotButton(slotName: 'C1', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'C3', ),
+                      RotatedSlotButton(slotName: 'C2', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'C4', ),
+                      RotatedSlotButton(slotName: 'C3', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'C5', ),
+                      RotatedSlotButton(slotName: 'C4', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'C6', ),
+                      RotatedSlotButton(slotName: 'C5', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'C7', ),
+                      RotatedSlotButton(slotName: 'C6', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'C8', ),
+                      RotatedSlotButton(slotName: 'C7', userPassword: userPassword),
+                      const SizedBox(height: 1),
+                      RotatedSlotButton(slotName: 'C8', userPassword: userPassword),
                       const SizedBox(height: 95),
-
                     ],
                   ),
                 ),
                 const SizedBox(width: 170),
-
                 // Right column
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      RotatedSlotButton(slotName: 'D1', ),
+                      RotatedSlotButton(slotName: 'D1', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'D2', ),
+                      RotatedSlotButton(slotName: 'D2', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'D3', ),
+                      RotatedSlotButton(slotName: 'D3', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'D4', ),
+                      RotatedSlotButton(slotName: 'D4', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'D5', ),
+                      RotatedSlotButton(slotName: 'D5', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'D6', ),
+                      RotatedSlotButton(slotName: 'D6', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'D7', ),
+                      RotatedSlotButton(slotName: 'D7', userPassword: userPassword),
                       const SizedBox(height: 1),
-                      RotatedSlotButton(slotName: 'D8', ),
+                      RotatedSlotButton(slotName: 'D8', userPassword: userPassword),
                       const SizedBox(height: 95),
                     ],
                   ),
@@ -79,54 +81,36 @@ class ParkingSlots2 extends StatelessWidget {
       ),
     );
   }
-
-  Positioned _buildSlotButton(BuildContext context, String slotName, double top, double left) {
-    return Positioned(
-      top: top,
-      left: left,
-      child: ElevatedButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BookingScreen(slotName: slotName),
-            ),
-          );
-        },
-        child: Text(slotName),
-      ),
-    );
-  }
 }
 
 class RotatedSlotButton extends StatelessWidget {
   final String slotName;
+  final String userPassword;
 
   const RotatedSlotButton({
     Key? key,
     required this.slotName,
+    required this.userPassword,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Convert degrees to radians
-
     return Padding(
       padding: const EdgeInsets.all(2.0),
       child: ElevatedButton(
-
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => BookingScreen(slotName: slotName),
+              builder: (context) => BookingScreen(
+                slotName: slotName,
+                userPassword: userPassword,
+              ),
             ),
           );
         },
         child: Text(slotName),
-
       ),
     );
   }
 }
-

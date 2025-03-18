@@ -1,17 +1,20 @@
 // lib/screens/thank_you_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:gdp_app/screens/dashboard_screen.dart';
 
 class ThankYouScreen extends StatelessWidget {
   final String slotName;
   final String date;
   final String time;
+  final String userPassword; // to go back to Dashboard
 
   const ThankYouScreen({
     Key? key,
     required this.slotName,
     required this.date,
     required this.time,
+    required this.userPassword,
   }) : super(key: key);
 
   @override
@@ -50,13 +53,22 @@ class ThankYouScreen extends StatelessWidget {
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
-                  // Return all the way to the first screen (HomeScreen, etc.)
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  // Return to DashboardScreen with the userPassword
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DashboardScreen(
+                        username: "User", // or pass from provider if needed
+                        userPassword: userPassword,
+                      ),
+                    ),
+                        (Route<dynamic> route) => false,
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF5733),
                 ),
-                child: const Text('Go Back to Home'),
+                child: const Text('Go Back to Dashboard'),
               ),
             ],
           ),

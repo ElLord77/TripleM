@@ -1,13 +1,16 @@
 // lib/screens/payment_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:gdp_app/providers/booking_provider.dart';
 import 'package:gdp_app/screens/payment_confirmation_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String slotName;
   final String date;
   final String time;
-  final double amount; // The amount we are charging
+  final double amount;
+  final String userPassword;
 
   const PaymentScreen({
     Key? key,
@@ -15,6 +18,7 @@ class PaymentScreen extends StatefulWidget {
     required this.date,
     required this.time,
     required this.amount,
+    required this.userPassword,
   }) : super(key: key);
 
   @override
@@ -29,12 +33,55 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final _cvvController = TextEditingController();
 
   @override
+  void dispose() {
+    _cardNumberController.dispose();
+    _cardHolderNameController.dispose();
+    _expiryDateController.dispose();
+    _cvvController.dispose();
+    super.dispose();
+  }
+
+  void _onPayNow() {
+    if (_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Processing payment...')),
+      );
+
+      // Save the booking using the provider
+      Provider.of<BookingProvider>(context, listen: false).addBooking(
+        Booking(
+          slotName: widget.slotName,
+          date: widget.date,
+          time: widget.time,
+        ),
+      );
+
+      // Navigate to Payment Confirmation Screen, passing userPassword
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentConfirmationScreen(
+            slotName: widget.slotName,
+            date: widget.date,
+            time: widget.time,
+            amount: widget.amount,
+            userPassword: widget.userPassword,
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F3460),
-        title: const Text('Payment Method', style: TextStyle(color: Color(0xFFF9F9F9))),
+        title: const Text(
+          'Payment Method',
+          style: TextStyle(color: Color(0xFFF9F9F9)),
+        ),
         centerTitle: true,
         elevation: 0,
       ),
@@ -45,7 +92,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Mock Credit Card Display
+              // Credit card display (example)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(15),
@@ -55,24 +102,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
+                  children: const [
+                    Text(
                       'business',
                       style: TextStyle(fontSize: 16, color: Colors.white54),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           '2221 0012 3412 3456',
                           style: TextStyle(fontSize: 20, letterSpacing: 2, color: Colors.white),
                         ),
-                        Container(width: 40, height: 30, color: Colors.transparent),
+                        SizedBox(width: 40, height: 30),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    const Text(
+                    SizedBox(height: 10),
+                    Text(
                       '12/23      Lee M. Cardholder',
                       style: TextStyle(fontSize: 14, color: Colors.white70),
                     ),
@@ -80,15 +127,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Card Number
               _buildTextField(_cardNumberController, 'Enter card no.', 'xxxx xxxx xxxx xxxx'),
               const SizedBox(height: 15),
-              // Card Holder
-              _buildTextField(_cardHolderNameController, 'Enter card Holder\'s Name', 'Enter Your Name'),
+              _buildTextField(_cardHolderNameController, "Enter card Holder's Name", 'Enter Your Name'),
               const SizedBox(height: 15),
-
-              // Expiry & CVV
               Row(
                 children: [
                   Expanded(
@@ -101,8 +143,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-
-              // PAY NOW BUTTON
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -119,8 +159,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // SLOT INFO
               Text(
                 'Slot: ${widget.slotName}\nDate: ${widget.date}\nTime: ${widget.time}\nAmount: \$${widget.amount}',
                 textAlign: TextAlign.center,
@@ -133,22 +171,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // Reusable text field
-  Widget _buildTextField(
-      TextEditingController controller,
-      String label,
-      String hint, {
-        bool obscureText = false,
-      }) {
+  Widget _buildTextField(TextEditingController controller, String label, String hint, {bool obscureText = false}) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: obscureText ? TextInputType.number : TextInputType.text,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
+        labelStyle: const TextStyle(color: Color(0xFFF9F9F9)),
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white54),
+        hintStyle: TextStyle(color: Color(0xFFF9F9F9).withOpacity(0.7)),
         filled: true,
         fillColor: Colors.white10,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -157,7 +189,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           borderRadius: BorderRadius.circular(10),
         ),
       ),
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Color(0xFFF9F9F9)),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please fill out this field';
@@ -165,27 +197,5 @@ class _PaymentScreenState extends State<PaymentScreen> {
         return null;
       },
     );
-  }
-
-  // Payment logic
-  void _onPayNow() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Processing payment...')),
-      );
-
-      // After collecting CC info, proceed to PaymentConfirmationScreen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PaymentConfirmationScreen(
-            slotName: widget.slotName,
-            date: widget.date,
-            time: widget.time,
-            amount: widget.amount, // Pass the same amount
-          ),
-        ),
-      );
-    }
   }
 }

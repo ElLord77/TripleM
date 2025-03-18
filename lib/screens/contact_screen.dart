@@ -42,7 +42,7 @@ class ContactScreen extends StatelessWidget {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // Implement your contact submission logic here
+                // Implement submission logic
               },
               child: Text('Submit'),
             ),
