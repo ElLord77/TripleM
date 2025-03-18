@@ -32,11 +32,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     _fullNameController = TextEditingController(text: userProvider.fullName);
     _emailController = TextEditingController(text: userProvider.username);
-    _phoneController = TextEditingController();
-    _addressController = TextEditingController();
+    _phoneController = TextEditingController(text: userProvider.phoneNumber);
+    _addressController = TextEditingController(text: userProvider.address);
     // If you have phone/address in your provider, populate them here
     // e.g., _phoneController.text = userProvider.phoneNumber;
-    // _addressController.text = userProvider.address;
+    // _addressController.text = userProvider.address;_
   }
 
   @override
@@ -59,8 +59,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       userProvider.setFullName(_fullNameController.text.trim());
       userProvider.setUsername(_emailController.text.trim());
-      // userProvider.setPhoneNumber(_phoneController.text.trim());
-      // userProvider.setAddress(_addressController.text.trim());
+      userProvider.setPhoneNumber(_phoneController.text.trim());
+      userProvider.setAddress(_addressController.text.trim());
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Profile info updated successfully!")),
