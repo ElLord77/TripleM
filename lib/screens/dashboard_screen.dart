@@ -1,13 +1,13 @@
-// lib/screens/dashboard_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/booking_provider.dart';
+import 'package:gdp_app/providers/user_provider.dart';
+import 'package:gdp_app/screens/sign_in_screen.dart';
 import 'package:gdp_app/screens/availability_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final String username;
-  final String userPassword; // Password passed from sign in/register
+  final String userPassword;
 
   const DashboardScreen({
     Key? key,
@@ -18,8 +18,10 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bookingProvider = Provider.of<BookingProvider>(context);
-    String currentBookingText = bookingProvider.currentBooking != null
-        ? "Slot: ${bookingProvider.currentBooking!.slotName}\nDate: ${bookingProvider.currentBooking!.date}\nTime: ${bookingProvider.currentBooking!.time}"
+    final currentBooking = bookingProvider.currentBooking;
+
+    String currentBookingText = currentBooking != null
+        ? "Slot: ${currentBooking.slotName}\nDate: ${currentBooking.date}\nTime: ${currentBooking.time}"
         : "No current booking";
 
     return Scaffold(
@@ -29,7 +31,16 @@ class DashboardScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
+              // 1) Optionally clear user data from UserProvider
+              Provider.of<UserProvider>(context, listen: false).setUsername("");
+              Provider.of<UserProvider>(context, listen: false).setUserPassword("");
+
+              // 2) Navigate to SignInScreen, removing all previous routes
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => SignInScreen()),
+                    (Route<dynamic> route) => false,
+              );
             },
           )
         ],
@@ -43,14 +54,18 @@ class DashboardScreen extends StatelessWidget {
             Text(
               "Welcome, $username!",
               style: const TextStyle(
-                  fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 20),
             // Current Booking Details Card
             Card(
               color: Colors.white10,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(15),
                 child: Column(
@@ -59,26 +74,29 @@ class DashboardScreen extends StatelessWidget {
                     const Text(
                       "Current Booking",
                       style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       currentBookingText,
-                      style:
-                      const TextStyle(fontSize: 16, color: Colors.white70),
+                      style: const TextStyle(fontSize: 16, color: Colors.white70),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            // Upcoming Bookings Section
+            // Upcoming Bookings
             const Text(
               "Upcoming Bookings",
               style: TextStyle(
-                  fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 10),
             ListView.builder(
@@ -90,24 +108,31 @@ class DashboardScreen extends StatelessWidget {
                 return Card(
                   color: Colors.white10,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: ListTile(
-                    leading:
-                    const Icon(Icons.calendar_today, color: Colors.white),
-                    title: Text("Slot: ${booking.slotName}",
-                        style: const TextStyle(color: Colors.white)),
-                    subtitle: Text("Date: ${booking.date}\nTime: ${booking.time}",
-                        style: const TextStyle(color: Colors.white70)),
+                    leading: const Icon(Icons.calendar_today, color: Colors.white),
+                    title: Text(
+                      "Slot: ${booking.slotName}",
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      "Date: ${booking.date}\nTime: ${booking.time}",
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                   ),
                 );
               },
             ),
             const SizedBox(height: 20),
-            // Quick Access Section
+            // Quick Access
             const Text(
               "Quick Access",
               style: TextStyle(
-                  fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 10),
             Row(
@@ -119,7 +144,7 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 30),
-            // Navigation Buttons
+            // Check Availability
             Center(
               child: ElevatedButton(
                 onPressed: () {
@@ -150,8 +175,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickAccessButton(
-      BuildContext context, IconData icon, String label) {
+  Widget _buildQuickAccessButton(BuildContext context, IconData icon, String label) {
     return Column(
       children: [
         CircleAvatar(
@@ -166,8 +190,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   void _showCancelReservationDialog(BuildContext context) {
-    final TextEditingController _cancelPasswordController =
-    TextEditingController();
+    final TextEditingController _cancelPasswordController = TextEditingController();
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -195,12 +218,8 @@ class DashboardScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                print('Entered: "${_cancelPasswordController.text.trim()}"');
-                print('Stored: "${userPassword.trim()}"');
-
                 if (_cancelPasswordController.text.trim() == userPassword.trim()) {
-                  Provider.of<BookingProvider>(context, listen: false)
-                      .clearBookings();
+                  Provider.of<BookingProvider>(context, listen: false).clearBookings();
                   Navigator.of(dialogContext).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Reservation cancelled.")),

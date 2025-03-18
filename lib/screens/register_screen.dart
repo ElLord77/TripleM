@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
+import 'package:gdp_app/screens/sign_in_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -14,7 +15,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _emailController    = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
@@ -33,7 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final String email = _emailController.text.trim();
       final String password = _passwordController.text.trim();
 
-      // Store in UserProvider
+      // Store in UserProvider (if you're using one)
       Provider.of<UserProvider>(context, listen: false).setUsername(email);
       Provider.of<UserProvider>(context, listen: false).setUserPassword(password);
 
@@ -82,6 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
               SizedBox(height: 20),
+
               // Email
               TextFormField(
                 controller: _emailController,
@@ -107,6 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
               SizedBox(height: 20),
+
               // Password
               TextFormField(
                 controller: _passwordController,
@@ -132,6 +135,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
               SizedBox(height: 20),
+
               // Confirm Password
               TextFormField(
                 controller: _confirmPasswordController,
@@ -157,6 +161,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
               SizedBox(height: 30),
+
               // Register Button
               SizedBox(
                 width: double.infinity,
@@ -172,6 +177,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: Text(
                     "Register",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+              ),
+
+              // Already a user? Sign in
+              SizedBox(height: 10),
+              TextButton(
+                onPressed: () {
+                  // Navigate to SignInScreen
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SignInScreen(),
+                    ),
+                  );
+                },
+                child: Text(
+                  "Already have an account? Sign in",
+                  style: TextStyle(
+                    color: const Color(0xFFE94560),
+                    fontSize: 14,
                   ),
                 ),
               ),
