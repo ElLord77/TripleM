@@ -1,9 +1,11 @@
+// lib/screens/dashboard_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/booking_provider.dart';
-import 'package:gdp_app/providers/user_provider.dart';
-import 'package:gdp_app/screens/sign_in_screen.dart';
 import 'package:gdp_app/screens/availability_screen.dart';
+import 'package:gdp_app/utils/menu_utils.dart'; // If you have a 3-dot menu
+import 'package:gdp_app/providers/user_provider.dart'; // If you need userPassword from here
 
 class DashboardScreen extends StatelessWidget {
   final String username;
@@ -26,23 +28,10 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Dashboard"),
+        title: const Text("Home"),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              // 1) Optionally clear user data from UserProvider
-              Provider.of<UserProvider>(context, listen: false).setUsername("");
-              Provider.of<UserProvider>(context, listen: false).setUserPassword("");
-
-              // 2) Navigate to SignInScreen, removing all previous routes
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => SignInScreen()),
-                    (Route<dynamic> route) => false,
-              );
-            },
-          )
+          // If you're using a 3-dot menu:
+          buildOverflowMenu(context),
         ],
       ),
       body: SingleChildScrollView(
@@ -50,7 +39,6 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Greeting Section
             Text(
               "Welcome, $username!",
               style: const TextStyle(
@@ -60,7 +48,8 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            // Current Booking Details Card
+
+            // Current Booking Card
             Card(
               color: Colors.white10,
               shape: RoundedRectangleBorder(
@@ -89,7 +78,8 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            // Upcoming Bookings
+
+            // Upcoming Bookings Section
             const Text(
               "Upcoming Bookings",
               style: TextStyle(
@@ -99,6 +89,7 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -120,53 +111,30 @@ class DashboardScreen extends StatelessWidget {
                       "Date: ${booking.date}\nTime: ${booking.time}",
                       style: const TextStyle(color: Colors.white70),
                     ),
+                    // Cancel a specific booking
+                    trailing: IconButton(
+                      icon: const Icon(Icons.cancel, color: Colors.red),
+                      onPressed: () {
+                        // Prompt for password before canceling
+                        _showCancelBookingDialog(context, booking);
+                      },
+                    ),
                   ),
                 );
               },
             ),
             const SizedBox(height: 20),
-            // Quick Access
-            const Text(
-              "Quick Access",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildQuickAccessButton(context, Icons.person, "Profile"),
-                _buildQuickAccessButton(context, Icons.settings, "Settings"),
-                _buildQuickAccessButton(context, Icons.help_outline, "Help"),
-              ],
-            ),
-            const SizedBox(height: 30),
-            // Check Availability
+
+            // Example Quick Access or other UI
             Center(
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const AvailabilityScreen(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const AvailabilityScreen()),
                   );
                 },
                 child: const Text("Check Availability"),
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Cancel Reservation Button
-            Center(
-              child: ElevatedButton(
-                onPressed: () => _showCancelReservationDialog(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                ),
-                child: const Text("Cancel Reservation"),
               ),
             ),
           ],
@@ -175,31 +143,18 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickAccessButton(BuildContext context, IconData icon, String label) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundColor: Colors.white10,
-          child: Icon(icon, size: 30, color: Colors.white),
-        ),
-        const SizedBox(height: 5),
-        Text(label, style: const TextStyle(color: Colors.white70)),
-      ],
-    );
-  }
-
-  void _showCancelReservationDialog(BuildContext context) {
+  /// Show a dialog to confirm password before canceling
+  void _showCancelBookingDialog(BuildContext context, Booking booking) {
     final TextEditingController _cancelPasswordController = TextEditingController();
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text("Cancel Reservation"),
+          title: const Text("Cancel Booking"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Please enter your password to confirm cancellation:"),
+              const Text("Enter your password to cancel this booking:"),
               TextField(
                 controller: _cancelPasswordController,
                 obscureText: true,
@@ -218,11 +173,14 @@ class DashboardScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
+                // Check if password matches the user's password
                 if (_cancelPasswordController.text.trim() == userPassword.trim()) {
-                  Provider.of<BookingProvider>(context, listen: false).clearBookings();
+                  // Cancel only the selected booking
+                  Provider.of<BookingProvider>(context, listen: false).removeBooking(booking);
+
                   Navigator.of(dialogContext).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Reservation cancelled.")),
+                    const SnackBar(content: Text("Booking cancelled.")),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(

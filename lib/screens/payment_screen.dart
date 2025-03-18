@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/booking_provider.dart';
 import 'package:gdp_app/screens/payment_confirmation_screen.dart';
+import 'package:gdp_app/utils/menu_utils.dart'; // import for the 3-dot menu
 
 class PaymentScreen extends StatefulWidget {
   final String slotName;
@@ -56,7 +57,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
       );
 
-      // Navigate to Payment Confirmation Screen, passing userPassword
+      // Navigate to Payment Confirmation Screen
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -84,6 +85,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          // Add the same 3-dot menu
+          buildOverflowMenu(context),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -92,7 +97,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Credit card display (example)
+              // Example credit card display
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(15),

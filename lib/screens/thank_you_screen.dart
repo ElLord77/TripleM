@@ -2,12 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
+import 'package:gdp_app/utils/menu_utils.dart'; // import the 3-dot menu utility
 
 class ThankYouScreen extends StatelessWidget {
   final String slotName;
   final String date;
   final String time;
-  final String userPassword; // to go back to Dashboard
+  final String userPassword;
 
   const ThankYouScreen({
     Key? key,
@@ -25,6 +26,10 @@ class ThankYouScreen extends StatelessWidget {
         title: const Text('Thank You'),
         backgroundColor: const Color(0xFF0F3460),
         centerTitle: true,
+        actions: [
+          // Add the same 3-dot menu
+          buildOverflowMenu(context),
+        ],
       ),
       body: Center(
         child: Padding(
@@ -53,12 +58,11 @@ class ThankYouScreen extends StatelessWidget {
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
-                  // Return to DashboardScreen with the userPassword
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
                       builder: (context) => DashboardScreen(
-                        username: "User", // or pass from provider if needed
+                        username: "User",
                         userPassword: userPassword,
                       ),
                     ),
