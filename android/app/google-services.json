@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "173139534080",
+    "project_id": "triple-m-garage",
+    "storage_bucket": "triple-m-garage.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:173139534080:android:330b71a39bb5755d0453e5",
+        "android_client_info": {
+          "package_name": "com.example.gdp_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6dqma1mW-eP_DiPsbBnc9ikmTe8m8PJw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:173139534080:android:73d36d1c49eadd090453e5",
+        "android_client_info": {
+          "package_name": "com.example.triple_m_garage"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6dqma1mW-eP_DiPsbBnc9ikmTe8m8PJw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
