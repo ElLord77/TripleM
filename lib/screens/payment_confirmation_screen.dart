@@ -6,14 +6,16 @@ import 'package:gdp_app/screens/thank_you_screen.dart';
 class PaymentConfirmationScreen extends StatelessWidget {
   final String slotName;
   final String date;
-  final String time;
+  final String startTime;
+  final String leavingTime;
   final double amount;
 
   const PaymentConfirmationScreen({
     Key? key,
     required this.slotName,
     required this.date,
-    required this.time,
+    required this.startTime,
+    required this.leavingTime,
     required this.amount,
   }) : super(key: key);
 
@@ -37,21 +39,22 @@ class PaymentConfirmationScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Date: $date\nTime: $time\nAmount: \$$amount',
+                'Date: $date\nArrival: $startTime\nLeaving: $leavingTime\nAmount: £$amount',
                 style: const TextStyle(fontSize: 16, color: Color(0xFFF9F9F9)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
-                  // Navigate to ThankYouScreen
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ThankYouScreen(
                         slotName: slotName,
                         date: date,
-                        time: time,
+                        startTime: startTime,
+                        leavingTime: leavingTime,
+                        amount: amount,
                       ),
                     ),
                   );

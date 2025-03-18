@@ -3,9 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/booking_provider.dart';
-import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/availability_screen.dart';
-import 'package:gdp_app/utils/menu_utils.dart';
+import 'package:gdp_app/utils/menu_utils.dart'; // If you have a 3-dot menu
 
 class DashboardScreen extends StatelessWidget {
   final String username;
@@ -20,15 +19,19 @@ class DashboardScreen extends StatelessWidget {
     final bookingProvider = Provider.of<BookingProvider>(context);
     final currentBooking = bookingProvider.currentBooking;
 
-    String currentBookingText = currentBooking != null
-        ? "Slot: ${currentBooking.slotName}\nDate: ${currentBooking.date}\nTime: ${currentBooking.time}"
-        : "No current booking";
+    String currentBookingText = "No current booking";
+    if (currentBooking != null) {
+      currentBookingText = "Slot: ${currentBooking.slotName}\n"
+          "Date: ${currentBooking.date}\n"
+          "Arrival: ${currentBooking.startTime}\n"
+          "Leaving: ${currentBooking.leavingTime}";
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Home"),
+        title: const Text("Dashboard"),
         actions: [
-          buildOverflowMenu(context),
+          buildOverflowMenu(context), // if you have a menu
         ],
       ),
       body: SingleChildScrollView(
@@ -38,13 +41,10 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Text(
               "Welcome, $username!",
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 20),
+
             // Current Booking
             Card(
               color: Colors.white10,
@@ -59,15 +59,13 @@ class DashboardScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      currentBookingText,
-                      style: const TextStyle(fontSize: 16, color: Colors.white70),
-                    ),
+                    Text(currentBookingText, style: const TextStyle(fontSize: 16, color: Colors.white70)),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 20),
+
             // Upcoming Bookings
             const Text(
               "Upcoming Bookings",
@@ -86,16 +84,26 @@ class DashboardScreen extends StatelessWidget {
                   child: ListTile(
                     leading: const Icon(Icons.calendar_today, color: Colors.white),
                     title: Text("Slot: ${booking.slotName}", style: const TextStyle(color: Colors.white)),
-                    subtitle: Text("Date: ${booking.date}\nTime: ${booking.time}", style: const TextStyle(color: Colors.white70)),
+                    subtitle: Text(
+                      "Date: ${booking.date}\nArrival: ${booking.startTime}\nLeaving: ${booking.leavingTime}",
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                     trailing: IconButton(
                       icon: const Icon(Icons.cancel, color: Colors.red),
-                      onPressed: () => _showCancelBookingDialog(context, booking),
+                      onPressed: () {
+                        bookingProvider.removeBooking(booking);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Booking cancelled.")),
+                        );
+                      },
                     ),
                   ),
                 );
               },
             ),
             const SizedBox(height: 20),
+
+            // Check Availability
             Center(
               child: ElevatedButton(
                 onPressed: () {
@@ -110,57 +118,6 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  void _showCancelBookingDialog(BuildContext context, Booking booking) {
-    final TextEditingController _cancelPasswordController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text("Cancel Booking"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Enter your password to cancel this booking:"),
-              TextField(
-                controller: _cancelPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Password",
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () {
-                // Always fetch the current password from the provider
-                final userProvider = Provider.of<UserProvider>(context, listen: false);
-                final currentPassword = userProvider.userPassword.trim();
-
-                if (_cancelPasswordController.text.trim() == currentPassword) {
-                  Provider.of<BookingProvider>(context, listen: false).removeBooking(booking);
-                  Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Booking cancelled.")),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Incorrect password.")),
-                  );
-                }
-              },
-              child: const Text("Confirm"),
-            ),
-          ],
-        );
-      },
     );
   }
 }

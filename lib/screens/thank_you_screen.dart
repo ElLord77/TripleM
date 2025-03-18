@@ -2,19 +2,21 @@
 
 import 'package:flutter/material.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
-import 'package:gdp_app/providers/user_provider.dart';
-import 'package:provider/provider.dart';
 
 class ThankYouScreen extends StatelessWidget {
   final String slotName;
   final String date;
-  final String time;
+  final String startTime;
+  final String leavingTime;
+  final double amount;
 
   const ThankYouScreen({
     Key? key,
     required this.slotName,
     required this.date,
-    required this.time,
+    required this.startTime,
+    required this.leavingTime,
+    required this.amount,
   }) : super(key: key);
 
   @override
@@ -43,7 +45,8 @@ class ThankYouScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'Your parking slot ($slotName) has been booked on $date at $time.',
+                'Your parking slot ($slotName) has been booked on $date.\n'
+                    'Arrival: $startTime\nLeaving: $leavingTime\nTotal Cost: £$amount',
                 style: const TextStyle(
                   fontSize: 16,
                   color: Color(0xFFF9F9F9),
@@ -53,16 +56,10 @@ class ThankYouScreen extends StatelessWidget {
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
-                  // If you need the username from UserProvider, fetch it here:
-                  final userProvider = Provider.of<UserProvider>(context, listen: false);
-                  final username = userProvider.username;
-
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DashboardScreen(
-                        username: username, // Greet them by name/email
-                      ),
+                      builder: (context) => const DashboardScreen(),
                     ),
                         (Route<dynamic> route) => false,
                   );
