@@ -20,6 +20,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController    = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  // New: phone number controller
+  final TextEditingController _phoneController    = TextEditingController();
+
   Future<void> _onRegister() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -38,25 +41,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
             .collection('users')
             .doc(uid)
             .set({
-          'fullName': _fullNameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'createdAt': FieldValue.serverTimestamp(),
+          'fullName':   _fullNameController.text.trim(),
+          'email':      _emailController.text.trim(),
+          'phone':      _phoneController.text.trim(),  // Save phone
+          'createdAt':  FieldValue.serverTimestamp(),
         });
 
-        // 4) Optionally store in UserProvider so the UI can show it
-        Provider.of<UserProvider>(context, listen: false)
-            .setUsername(_emailController.text.trim());
-        Provider.of<UserProvider>(context, listen: false)
-            .setFullName(_fullNameController.text.trim());
+        // 4) Update UserProvider with new data
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        userProvider.setUsername(_emailController.text.trim());
+        userProvider.setFullName(_fullNameController.text.trim());
+        userProvider.setPhoneNumber(_phoneController.text.trim()); // Save phone locally
 
-        // 5) Navigate directly to DashboardScreen with user data
+        // 5) Navigate directly to DashboardScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => const DashboardScreen(),
           ),
         );
-
       } on FirebaseAuthException catch (e) {
         // If there's an auth error, show it
         ScaffoldMessenger.of(context).showSnackBar(
@@ -89,7 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Logo Section (optional if you already have it in the AppBar)
+            // Optional: Logo Section
             Padding(
               padding: const EdgeInsets.only(bottom: 20.0),
               child: Image.asset(
@@ -114,6 +117,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                   const SizedBox(height: 15),
+
                   // Email
                   TextFormField(
                     controller: _emailController,
@@ -127,6 +131,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                   const SizedBox(height: 15),
+
+                  // Phone Number
+                  TextFormField(
+                    controller: _phoneController,
+                    decoration: const InputDecoration(labelText: "Phone Number"),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Please enter your phone number";
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 15),
+
                   // Password
                   TextFormField(
                     controller: _passwordController,
@@ -143,12 +162,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                   const SizedBox(height: 30),
+
                   // Register Button
                   ElevatedButton(
                     onPressed: _onRegister,
                     child: const Text("Register"),
                   ),
                   const SizedBox(height: 10),
+
                   // Already have an account? Sign In Button
                   TextButton(
                     onPressed: () {
