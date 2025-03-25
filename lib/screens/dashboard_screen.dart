@@ -3,16 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:gdp_app/providers/booking_provider.dart';
+import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/availability_screen.dart';
 import 'package:gdp_app/utils/menu_utils.dart'; // If you have a 3-dot menu
 
 class DashboardScreen extends StatelessWidget {
-  final String username;
-
-  const DashboardScreen({
-    Key? key,
-    this.username = "User",
-  }) : super(key: key);
+  const DashboardScreen({Key? key}) : super(key: key);
 
   /// Show a confirmation dialog and return true if confirmed.
   Future<bool> _showConfirmationDialog(
@@ -101,6 +97,12 @@ class DashboardScreen extends StatelessWidget {
     final bookingProvider = Provider.of<BookingProvider>(context);
     final currentBooking = bookingProvider.currentBooking;
 
+    // Fetch the user’s current email or name from UserProvider
+    final userProvider = Provider.of<UserProvider>(context);
+    final userName = userProvider.username.isNotEmpty
+        ? userProvider.username
+        : "User";
+
     String currentBookingText = "No current booking";
     if (currentBooking != null) {
       currentBookingText = "Slot: ${currentBooking.slotName}\n"
@@ -132,7 +134,7 @@ class DashboardScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Welcome, $username!",
+              "Welcome, $userName!",
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,

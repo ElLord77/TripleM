@@ -1,3 +1,5 @@
+// lib/screens/sign_in_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,9 +7,11 @@ import 'package:provider/provider.dart';
 
 // Import your providers and destination screens
 import 'package:gdp_app/providers/user_provider.dart';
+import 'package:gdp_app/providers/booking_provider.dart';
+import 'package:gdp_app/services/firestore_service.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
 import 'package:gdp_app/screens/register_screen.dart';
-import 'package:gdp_app/screens/forgot_password_screen.dart'; // Ensure this file exists
+import 'package:gdp_app/screens/forgot_password_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({Key? key}) : super(key: key);
@@ -33,33 +37,41 @@ class _SignInScreenState extends State<SignInScreen> {
           password: _passwordController.text.trim(),
         );
 
-        // 2) Get the current user's UID
-        String uid = userCredential.user!.uid;
+        // 2) Get the signed-in user's actual email (avoid using doc['email']).
+        final actualEmail = userCredential.user?.email ?? _emailController.text.trim();
 
-        // 3) Fetch the user's doc from /users/{uid}
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .get();
+        // 3) Update the UserProvider with the actual email.
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        userProvider.setUsername(actualEmail);
 
-        Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
-        if (data != null) {
-          // 4) Store user data in UserProvider
-          final userProvider = Provider.of<UserProvider>(context, listen: false);
-          userProvider.setUsername(data['email'] ?? '');
-          userProvider.setFullName(data['fullName'] ?? '');
-          // Add more fields if you have them
+        // 4) Fetch user profile from /users/{email} (if it exists) and update provider
+        final profileData = await FirestoreService().getUserProfileByEmail(actualEmail);
+        if (profileData != null) {
+          userProvider.setFullName(profileData['fullName'] ?? '');
+          userProvider.setPhoneNumber(profileData['phoneNumber'] ?? '');
+          userProvider.setAddress(profileData['address'] ?? '');
+          // If you store the email field in that doc as well:
+          // userProvider.setUsername(profileData['email'] ?? actualEmail);
         }
 
-        // 5) Navigate to DashboardScreen
+        // 5) Fetch bookings from Firestore for this user (using the actualEmail).
+        final bookings = await FirestoreService().getBookings(userEmail: actualEmail);
+
+        // 6) Update the BookingProvider with the fetched bookings
+        final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+        bookingProvider.clearBookings();
+        for (var booking in bookings) {
+          bookingProvider.addBooking(booking);
+        }
+
+        // 7) Navigate to DashboardScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => DashboardScreen(
-              username: _emailController.text.trim(),
-            ),
+            builder: (context) => const DashboardScreen(),
           ),
         );
+
       } on FirebaseAuthException catch (e) {
         // If sign in fails (e.g., wrong password, user not found)
         ScaffoldMessenger.of(context).showSnackBar(
@@ -114,7 +126,6 @@ class _SignInScreenState extends State<SignInScreen> {
                       if (value == null || value.isEmpty) {
                         return "Please enter your email";
                       }
-                      // Optionally add email format validation
                       return null;
                     },
                   ),

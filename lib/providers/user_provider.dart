@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 
 class UserProvider with ChangeNotifier {
-  String _username = "Homoss";
+  String _username = "";
   String _userPassword = "123456";
   String _fullName = "John Doe";
   String _phoneNumber = "";

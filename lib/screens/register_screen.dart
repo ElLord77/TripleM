@@ -53,11 +53,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => DashboardScreen(
-              username: _emailController.text.trim(),
-            ),
+            builder: (context) => const DashboardScreen(),
           ),
         );
+
       } on FirebaseAuthException catch (e) {
         // If there's an auth error, show it
         ScaffoldMessenger.of(context).showSnackBar(

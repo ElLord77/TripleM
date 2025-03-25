@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:gdp_app/providers/booking_provider.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -27,7 +28,7 @@ class FirestoreService {
     required String date,
     required String startTime,
     required String leavingTime,
-    required String userId,
+    required String userEmail, // now using email
   }) async {
     final newStart = _parseTime(startTime);
     final newEnd = _parseTime(leavingTime);
@@ -52,23 +53,63 @@ class FirestoreService {
       if (existingStart != null && existingEnd != null) {
         if (_timesOverlap(existingStart, existingEnd, newStart, newEnd)) {
           throw Exception(
-            "This slot is partially booked from "
-                "${data['startTime']} to ${data['leavingTime']}",
+            "This slot is partially booked from ${data['startTime']} to ${data['leavingTime']}",
           );
         }
       }
     }
 
-    // 3) If no overlap, create a new doc with auto-ID
+    // 3) If no overlap, create a new doc with auto-ID and store the email
     final docRef = await _db.collection('bookings').add({
       'slotName': slotName,
       'date': date,
       'startTime': startTime,
       'leavingTime': leavingTime,
-      'userId': userId,
+      'userId': userEmail, // store email here
       'reservedAt': FieldValue.serverTimestamp(),
     });
 
     return docRef.id;
+  }
+
+  /// Fetch all bookings for a specific user by email.
+  Future<List<Booking>> getBookings({required String userEmail}) async {
+    final snapshot = await _db
+        .collection('bookings')
+        .where('userId', isEqualTo: userEmail)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return Booking(
+        docId: doc.id,
+        slotName: data['slotName'] ?? '',
+        date: data['date'] ?? '',
+        startTime: data['startTime'] ?? '',
+        leavingTime: data['leavingTime'] ?? '',
+      );
+    }).toList();
+  }
+
+  /// Create or update a user profile keyed by their email
+  Future<void> updateUserProfileByEmail({
+    required String email,
+    required String fullName,
+    required String phoneNumber,
+    required String address,
+  }) async {
+    // Use set(..., SetOptions(merge: true)) so it won't overwrite the entire doc if it exists
+    await _db.collection('users').doc(email).set({
+      'email': email,
+      'fullName': fullName,
+      'phoneNumber': phoneNumber,
+      'address': address,
+    }, SetOptions(merge: true));
+  }
+
+  /// Fetch a user profile by email
+  Future<Map<String, dynamic>?> getUserProfileByEmail(String email) async {
+    final docSnap = await _db.collection('users').doc(email).get();
+    return docSnap.data();
   }
 }

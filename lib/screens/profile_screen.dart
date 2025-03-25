@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/user_provider.dart';
+import 'package:gdp_app/services/firestore_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -31,12 +32,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     _fullNameController = TextEditingController(text: userProvider.fullName);
-    _emailController = TextEditingController(text: userProvider.username);
-    _phoneController = TextEditingController(text: userProvider.phoneNumber);
-    _addressController = TextEditingController(text: userProvider.address);
-    // If you have phone/address in your provider, populate them here
-    // e.g., _phoneController.text = userProvider.phoneNumber;
-    // _addressController.text = userProvider.address;_
+    _emailController    = TextEditingController(text: userProvider.username);
+    _phoneController    = TextEditingController(text: userProvider.phoneNumber);
+    _addressController  = TextEditingController(text: userProvider.address);
   }
 
   @override
@@ -53,18 +51,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Save basic profile info
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
     if (_formKey.currentState!.validate()) {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
+      // 1) Update local provider
       userProvider.setFullName(_fullNameController.text.trim());
       userProvider.setUsername(_emailController.text.trim());
       userProvider.setPhoneNumber(_phoneController.text.trim());
       userProvider.setAddress(_addressController.text.trim());
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Profile info updated successfully!")),
-      );
+      // 2) Also update Firestore so changes persist across app restarts
+      final userEmail = userProvider.username; // The user's email
+      if (userEmail.isNotEmpty) {
+        try {
+          await FirestoreService().updateUserProfileByEmail(
+            email: userEmail,
+            fullName: userProvider.fullName,
+            phoneNumber: userProvider.phoneNumber,
+            address: userProvider.address,
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Profile info updated successfully!")),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error updating profile: $e")),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No email found. Are you signed in?")),
+        );
+      }
     }
   }
 
@@ -89,7 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      // Update user password
+      // Update user password in the provider (local only)
       userProvider.setUserPassword(_newPasswordController.text.trim());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Password changed successfully!")),

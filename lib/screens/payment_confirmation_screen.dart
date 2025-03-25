@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdp_app/screens/dashboard_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/screens/thank_you_screen.dart';
 import 'package:gdp_app/screens/availability_screen.dart';
@@ -49,7 +50,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Payment successful for Slot: $slotName',
+                'Confirm Payment for Slot: $slotName',
                 style: const TextStyle(fontSize: 18, color: Color(0xFFF9F9F9)),
               ),
               const SizedBox(height: 10),
@@ -62,14 +63,13 @@ class PaymentConfirmationScreen extends StatelessWidget {
               ElevatedButton(
                 onPressed: () async {
                   try {
-                    final userId = Provider.of<UserProvider>(context, listen: false).username;
-                    // Reserve slot in Firestore and get the new document ID.
+                    final userEmail = Provider.of<UserProvider>(context, listen: false).username;
                     final String docId = await FirestoreService().reserveSlot(
                       slotName: slotName,
                       date: date,
                       startTime: startTime,
                       leavingTime: leavingTime,
-                      userId: userId,
+                      userEmail: userEmail, // <-- updated parameter name
                     );
                     print("Reserved docId: $docId"); // Debug output
 
@@ -118,7 +118,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AvailabilityScreen(),
+                      builder: (context) => const DashboardScreen(),
                     ),
                   );
                 },
