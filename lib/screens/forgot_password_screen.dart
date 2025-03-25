@@ -7,7 +7,16 @@ class ForgotPasswordScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Forgot Password"),
+        title: Row(
+          children: [
+            Image.asset(
+              'images/logo.jpg', // Your logo asset path
+              height: 30, // Adjust the height to make the logo smaller
+            ),
+            const SizedBox(width: 8),
+            const Text("Forgot Password"),
+          ],
+        ),
       ),
       body: Center(
         child: Padding(

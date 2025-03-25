@@ -25,9 +25,21 @@ class PaymentConfirmationScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Payment Confirmation'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'images/logo.jpg', // Update with your logo asset path
+              height: 30,       // Adjust the height as needed
+            ),
+            const SizedBox(width: 8),
+            const Text('Payment Confirmation'),
+          ],
+        ),
         backgroundColor: const Color(0xFF0F3460),
+        centerTitle: true,
       ),
+
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),

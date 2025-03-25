@@ -65,8 +65,18 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Booking - ${widget.slotName}'),
+        title: Row(
+          children: [
+            Image.asset(
+              'images/logo.jpg', // Update with your logo asset path
+              height: 30,        // Adjust the height as needed
+            ),
+            const SizedBox(width: 8),
+            Text('Booking - ${widget.slotName}'),
+          ],
+        ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(

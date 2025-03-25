@@ -132,13 +132,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F3460),
-        title: const Text(
-          'Payment Method',
-          style: TextStyle(color: Color(0xFFF9F9F9)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'images/logo.jpg', // Update with your logo asset path
+              height: 30,        // Adjust the height as needed
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Payment Method',
+              style: TextStyle(color: Color(0xFFF9F9F9)),
+            ),
+          ],
         ),
         centerTitle: true,
         elevation: 0,
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(

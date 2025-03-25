@@ -11,7 +11,18 @@ class ParkingSlots2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Level 2 Parking')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Image.asset(
+              'images/logo.jpg', // Your logo asset path
+              height: 30, // Adjust the height to make the logo smaller
+            ),
+            const SizedBox(width: 8),
+            const Text("Level 2 Parking"),
+          ],
+        ),
+      ),
       body: Stack(
         children: [
           Positioned.fill(

@@ -11,8 +11,18 @@ class AvailabilityScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Triple M Garage'),
+        title: Row(
+          children: [
+            Image.asset(
+              'images/logo.jpg', // Your logo asset path
+              height: 30, // Adjust the height to make the logo smaller
+            ),
+            const SizedBox(width: 8),
+            const Text("Availability"),
+          ],
+        ),
       ),
+
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

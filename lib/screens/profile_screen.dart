@@ -106,8 +106,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Profile"),
-        centerTitle: true,
+        title: Row(
+          children: [
+            Image.asset(
+              'images/logo.jpg', // Your logo asset path
+              height: 30, // Adjust the height to make the logo smaller
+            ),
+            const SizedBox(width: 8),
+            const Text("Profile"),
+          ],
+        ),
       ),
       backgroundColor: const Color(0xFF16213E),
       body: SingleChildScrollView(

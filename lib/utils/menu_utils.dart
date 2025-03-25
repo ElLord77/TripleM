@@ -1,6 +1,7 @@
 // lib/utils/menu_utils.dart
 
 import 'package:flutter/material.dart';
+import 'package:gdp_app/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/sign_in_screen.dart';
@@ -49,10 +50,14 @@ void _onMenuSelected(BuildContext context, String value) {
       break;
 
     case 'settings':
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Settings selected.")),
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SettingsScreen()),
       );
       break;
+
+
     case 'logout':
       Provider.of<UserProvider>(context, listen: false).setUsername("");
       Provider.of<UserProvider>(context, listen: false).setUserPassword("");

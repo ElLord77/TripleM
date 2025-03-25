@@ -6,7 +6,18 @@ class ContactScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Contact us')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Image.asset(
+              'images/logo.jpg', // Your logo asset path
+              height: 30, // Adjust the height to make the logo smaller
+            ),
+            const SizedBox(width: 8),
+            const Text("Contact Us"),
+          ],
+        ),
+      ),
       body: Padding(
         padding: EdgeInsets.all(20),
         child: Column(

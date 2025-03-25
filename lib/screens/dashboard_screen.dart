@@ -31,7 +31,16 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Dashboard"),
+        title: Row(
+          children: [
+            Image.asset(
+              'images/logo.jpg', // Your logo asset path
+              height: 30,       // Adjust the height to make it smaller
+            ),
+            const SizedBox(width: 8),
+            const Text("Dashboard"),
+          ],
+        ),
         actions: [
           buildOverflowMenu(context), // If you have a 3-dot menu
         ],
