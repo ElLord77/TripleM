@@ -1,5 +1,3 @@
-// lib/screens/payment_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +5,7 @@ import 'package:gdp_app/providers/booking_provider.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/payment_confirmation_screen.dart';
 import 'package:gdp_app/services/firestore_service.dart';
+import 'package:flutter_credit_card/flutter_credit_card.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String slotName;
@@ -29,13 +28,17 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
+  /// The GlobalKey for validating the form inside CreditCardForm (4.x).
   final _formKey = GlobalKey<FormState>();
 
-  final _cardNumberController = TextEditingController();
-  final _cardHolderNameController = TextEditingController();
-  final _expiryDateController = TextEditingController();
-  final _cvvController = TextEditingController();
+  /// Fields for real-time credit card display
+  String cardNumber = '';
+  String expiryDate = '';
+  String cardHolderName = '';
+  String cvvCode = '';
+  bool isCvvFocused = false;
 
+  /// Computed parking cost
   double _calculatedCost = 0.0;
 
   @override
@@ -44,28 +47,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
     _calculatedCost = _computeParkingCost(widget.startTime, widget.leavingTime);
   }
 
-  @override
-  void dispose() {
-    _cardNumberController.dispose();
-    _cardHolderNameController.dispose();
-    _expiryDateController.dispose();
-    _cvvController.dispose();
-    super.dispose();
-  }
-
+  /// Parse time string like "10:00 AM" using intl
   DateTime? _parseTime(String timeString) {
     try {
-      print("Trying to parse: '$timeString'");
       final format = DateFormat("h:mm a");
-      final parsed = format.parse(timeString);
-      print("Parsed = $parsed");
-      return parsed;
+      return format.parse(timeString);
     } catch (e) {
       print("parseTime error: $e");
       return null;
     }
   }
 
+  /// Compute cost based on time difference (example: £20/hour)
   double _computeParkingCost(String startTime, String leavingTime) {
     final start = _parseTime(startTime);
     final leave = _parseTime(leavingTime);
@@ -79,6 +72,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return cost;
   }
 
+  /// This callback updates local state whenever the user edits card fields
+  void _onCreditCardModelChange(CreditCardModel data) {
+    setState(() {
+      cardNumber = data.cardNumber;
+      expiryDate = data.expiryDate;
+      cardHolderName = data.cardHolderName;
+      cvvCode = data.cvvCode;
+      isCvvFocused = data.isCvvFocused;
+    });
+  }
+
+  /// Payment action
   Future<void> _onPayNow() async {
     if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -89,6 +94,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final userId = userProvider.username;
 
       try {
+        // Reserve the slot in Firestore
         final docId = await FirestoreService().reserveSlot(
           slotName: widget.slotName,
           date: widget.date,
@@ -97,6 +103,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           userId: userId,
         );
 
+        // Update local booking state
         final booking = Booking(
           docId: docId,
           slotName: widget.slotName,
@@ -106,6 +113,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         );
         Provider.of<BookingProvider>(context, listen: false).addBooking(booking);
 
+        // Navigate to confirmation screen
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -132,120 +140,122 @@ class _PaymentScreenState extends State<PaymentScreen> {
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F3460),
-        title: const Text('Payment Method', style: TextStyle(color: Color(0xFFF9F9F9))),
+        title: const Text(
+          'Payment Method',
+          style: TextStyle(color: Color(0xFFF9F9F9)),
+        ),
         centerTitle: true,
         elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Visa card image display
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.white10,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Image.asset(
-                  'assets/business-card-1944.png', // Ensure this is the correct path to your image
-                  height: 100, // Adjust height as needed
-                  width: double.infinity,
-                ),
-              ),
-              const SizedBox(height: 20),
+        child: Column(
+          children: [
+            /// 1. Constrain + Scale the card so it never overflows horizontally
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                width: 320, // typical credit card width in px
+                child: CreditCardWidget(
+                  cardNumber: cardNumber,
+                  expiryDate: expiryDate,
+                  cardHolderName: cardHolderName,
+                  cvvCode: cvvCode,
+                  showBackView: isCvvFocused,
+                  cardBgColor: const Color(0xFF0F3460),
+                  obscureCardNumber: false,
+                  obscureCardCvv: false,
 
-              // Card Number
-              _buildTextField(_cardNumberController, 'Enter card no.', 'xxxx xxxx xxxx xxxx'),
-              const SizedBox(height: 15),
+                  // In some 4.x versions, you might remove the chip by setting isChipVisible: false
+                  // If you get "named parameter not found" errors, remove this line:
+                  isChipVisible: false,
 
-              // Card Holder
-              _buildTextField(_cardHolderNameController, "Enter card Holder's Name", 'Enter Your Name'),
-              const SizedBox(height: 15),
-
-              // Expiry & CVV
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(_expiryDateController, 'Expire date:', 'MM/YY'),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: _buildTextField(_cvvController, 'CVV:', '123', obscureText: true),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Pay Now button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5733),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: _onPayNow,
-                  child: const Text(
-                    'Pay Now',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
-                  ),
+                  // 4.x requires a brand callback
+                  onCreditCardWidgetChange: (brand) {
+                    // no-op
+                  },
+                  // No custom icons, no brand references
                 ),
               ),
-              const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 20),
 
-              // Booking summary
-              Text(
-                'Slot: ${widget.slotName}'
-                    '\nDate: ${widget.date}'
-                    '\nArrival: ${widget.startTime}'
-                    '\nLeaving: ${widget.leavingTime}'
-                    '\nCost: £${_calculatedCost.toStringAsFixed(2)}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: Colors.white70),
+            /// 2. CreditCardForm with inputConfiguration (4.x approach)
+            CreditCardForm(
+              formKey: _formKey,
+              cardNumber: cardNumber,
+              expiryDate: expiryDate,
+              cardHolderName: cardHolderName,
+              cvvCode: cvvCode,
+              onCreditCardModelChange: _onCreditCardModelChange,
+              obscureCvv: false,
+              obscureNumber: false,
+              inputConfiguration: const InputConfiguration(
+                cardNumberDecoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Number',
+                  hintText: 'XXXX XXXX XXXX XXXX',
+                ),
+                expiryDateDecoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Expired Date',
+                  hintText: 'XX/XX',
+                ),
+                cvvCodeDecoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'CVV',
+                  hintText: 'XXX',
+                ),
+                cardHolderDecoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Card Holder',
+                ),
+                cardNumberTextStyle: TextStyle(fontSize: 16, color: Colors.white),
+                cardHolderTextStyle: TextStyle(fontSize: 16, color: Colors.white),
+                expiryDateTextStyle: TextStyle(fontSize: 16, color: Colors.white),
+                cvvCodeTextStyle: TextStyle(fontSize: 16, color: Colors.white),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+
+            /// 3. Pay Now button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF5733),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: _onPayNow,
+                child: const Text(
+                  'Pay Now',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            /// 4. Booking summary
+            Text(
+              'Slot: ${widget.slotName}'
+                  '\nDate: ${widget.date}'
+                  '\nArrival: ${widget.startTime}'
+                  '\nLeaving: ${widget.leavingTime}'
+                  '\nCost: £${_calculatedCost.toStringAsFixed(2)}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.white70),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildTextField(
-      TextEditingController controller,
-      String label,
-      String hint, {
-        bool obscureText = false,
-      }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: obscureText ? TextInputType.number : TextInputType.text,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white54),
-        filled: true,
-        fillColor: Colors.white10,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Color(0xFFFF5733)),
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-      style: const TextStyle(color: Colors.white),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please fill out this field';
-        }
-        return null;
-      },
     );
   }
 }
