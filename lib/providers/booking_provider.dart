@@ -1,5 +1,3 @@
-// lib/providers/booking_provider.dart
-
 import 'package:flutter/material.dart';
 
 /// The model for a booking, now with docId for Firestore deletion.

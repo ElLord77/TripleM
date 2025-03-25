@@ -1,5 +1,3 @@
-// lib/screens/dashboard_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,6 +13,88 @@ class DashboardScreen extends StatelessWidget {
     Key? key,
     this.username = "User",
   }) : super(key: key);
+
+  /// Show a confirmation dialog and return true if confirmed.
+  Future<bool> _showConfirmationDialog(
+      BuildContext context, String title, String content) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("No"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Yes"),
+          ),
+        ],
+      ),
+    ) ??
+        false;
+  }
+
+  /// Cancel a single booking with confirmation.
+  Future<void> _cancelBooking(BuildContext context, Booking booking) async {
+    bool confirmed = await _showConfirmationDialog(
+      context,
+      "Cancel Booking",
+      "Do you really want to cancel this booking?",
+    );
+    if (!confirmed) return;
+
+    // 1) Delete from Firestore if docId is set
+    if (booking.docId.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(booking.docId)
+          .delete();
+    }
+
+    // 2) Remove from local provider
+    Provider.of<BookingProvider>(context, listen: false).removeBooking(booking);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Reservation cancelled.")),
+    );
+  }
+
+  /// Cancel all bookings (both current and upcoming) with confirmation.
+  Future<void> _cancelAllBookings(BuildContext context) async {
+    bool confirmed = await _showConfirmationDialog(
+      context,
+      "Cancel All Bookings",
+      "Do you really want to cancel all your bookings?",
+    );
+    if (!confirmed) return;
+
+    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+
+    // Prepare a list of all bookings to cancel
+    final List bookingList = [];
+    if (bookingProvider.currentBooking != null) {
+      bookingList.add(bookingProvider.currentBooking);
+    }
+    bookingList.addAll(bookingProvider.upcomingBookings);
+
+    // Iterate and cancel each booking in Firestore and local provider
+    for (var booking in bookingList) {
+      if (booking.docId.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('bookings')
+            .doc(booking.docId)
+            .delete();
+      }
+      bookingProvider.removeBooking(booking);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("All reservations cancelled.")),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +207,7 @@ class DashboardScreen extends StatelessWidget {
                           "Leaving: ${booking.leavingTime}",
                       style: const TextStyle(color: Colors.white70),
                     ),
-                    // Cancel button for each upcoming booking
+                    // Cancel button for each upcoming booking with confirmation
                     trailing: IconButton(
                       icon: const Icon(Icons.cancel, color: Colors.red),
                       onPressed: () => _cancelBooking(context, booking),
@@ -138,15 +218,15 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // If there's a current booking, show a "Cancel" button
-            if (currentBooking != null)
+            // Cancel All Bookings Button (shown if there is at least one booking)
+            if (currentBooking != null || bookingProvider.upcomingBookings.isNotEmpty)
               Center(
                 child: ElevatedButton(
-                  onPressed: () => _cancelBooking(context, currentBooking),
+                  onPressed: () => _cancelAllBookings(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                   ),
-                  child: const Text("Cancel Current Booking"),
+                  child: const Text("Cancel All Bookings"),
                 ),
               ),
             const SizedBox(height: 20),
@@ -166,24 +246,6 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  /// Directly cancel a booking from Firestore + local provider, no password prompt
-  Future<void> _cancelBooking(BuildContext context, Booking booking) async {
-    // 1) Delete from Firestore if docId is set
-    if (booking.docId.isNotEmpty) {
-      await FirebaseFirestore.instance
-          .collection('bookings')
-          .doc(booking.docId)
-          .delete();
-    }
-
-    // 2) Remove from local provider
-    Provider.of<BookingProvider>(context, listen: false).removeBooking(booking);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Reservation cancelled.")),
     );
   }
 }

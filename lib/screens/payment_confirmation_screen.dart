@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gdp_app/screens/dashboard_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/screens/thank_you_screen.dart';
 import 'package:gdp_app/screens/availability_screen.dart';
 import 'package:gdp_app/services/firestore_service.dart';
 import 'package:gdp_app/providers/user_provider.dart';
+import 'package:gdp_app/providers/booking_provider.dart';
 
 class PaymentConfirmationScreen extends StatelessWidget {
   final String slotName;
@@ -61,17 +61,30 @@ class PaymentConfirmationScreen extends StatelessWidget {
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () async {
-                  // Update Firestore on Proceed button click
                   try {
                     final userId = Provider.of<UserProvider>(context, listen: false).username;
-                    // Reserve slot in Firestore
-                    await FirestoreService().reserveSlot(
+                    // Reserve slot in Firestore and get the new document ID.
+                    final String docId = await FirestoreService().reserveSlot(
                       slotName: slotName,
                       date: date,
                       startTime: startTime,
                       leavingTime: leavingTime,
                       userId: userId,
                     );
+                    print("Reserved docId: $docId"); // Debug output
+
+                    // Only add booking if docId is valid
+                    if (docId.isNotEmpty) {
+                      final newBooking = Booking(
+                        docId: docId,
+                        slotName: slotName,
+                        date: date,
+                        startTime: startTime,
+                        leavingTime: leavingTime,
+                      );
+                      Provider.of<BookingProvider>(context, listen: false).addBooking(newBooking);
+                    }
+
                     // Navigate to ThankYouScreen upon successful reservation
                     Navigator.push(
                       context,
@@ -96,15 +109,16 @@ class PaymentConfirmationScreen extends StatelessWidget {
                 ),
                 child: const Text('Confirm'),
               ),
+
               const SizedBox(height: 10),
               // Cancel Button
               ElevatedButton(
                 onPressed: () {
-                  // Navigate back to the availability page
+                  // Navigate back to the DashboardScreen (clearing intermediate routes)
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const DashboardScreen(),
+                      builder: (context) => const AvailabilityScreen(),
                     ),
                   );
                 },
