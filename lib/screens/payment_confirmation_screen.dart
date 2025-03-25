@@ -1,7 +1,9 @@
-// lib/screens/payment_confirmation_screen.dart
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:gdp_app/screens/thank_you_screen.dart';
+import 'package:gdp_app/screens/availability_screen.dart';
+import 'package:gdp_app/services/firestore_service.dart';
+import 'package:gdp_app/providers/user_provider.dart';
 
 class PaymentConfirmationScreen extends StatelessWidget {
   final String slotName;
@@ -30,7 +32,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
           children: [
             Image.asset(
               'images/logo.jpg', // Update with your logo asset path
-              height: 30,       // Adjust the height as needed
+              height: 30,        // Adjust the height as needed
             ),
             const SizedBox(width: 8),
             const Text('Payment Confirmation'),
@@ -39,7 +41,6 @@ class PaymentConfirmationScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF0F3460),
         centerTitle: true,
       ),
-
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -58,24 +59,58 @@ class PaymentConfirmationScreen extends StatelessWidget {
               ),
               const SizedBox(height: 30),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ThankYouScreen(
-                        slotName: slotName,
-                        date: date,
-                        startTime: startTime,
-                        leavingTime: leavingTime,
-                        amount: amount,
+                onPressed: () async {
+                  // Update Firestore on Proceed button click
+                  try {
+                    final userId = Provider.of<UserProvider>(context, listen: false).username;
+                    // Reserve slot in Firestore
+                    await FirestoreService().reserveSlot(
+                      slotName: slotName,
+                      date: date,
+                      startTime: startTime,
+                      leavingTime: leavingTime,
+                      userId: userId,
+                    );
+                    // Navigate to ThankYouScreen upon successful reservation
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ThankYouScreen(
+                          slotName: slotName,
+                          date: date,
+                          startTime: startTime,
+                          leavingTime: leavingTime,
+                          amount: amount,
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.toString())),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF5733),
                 ),
                 child: const Text('Proceed'),
+              ),
+              const SizedBox(height: 10),
+              // Cancel Button
+              ElevatedButton(
+                onPressed: () {
+                  // Navigate back to the availability page
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AvailabilityScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey,
+                ),
+                child: const Text('Cancel'),
               ),
             ],
           ),

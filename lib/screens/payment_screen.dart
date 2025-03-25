@@ -81,48 +81,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Future<void> _onPayNow() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Processing payment...')),
-      );
-
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final userId = userProvider.username;
-
-      try {
-        final docId = await FirestoreService().reserveSlot(
-          slotName: widget.slotName,
-          date: widget.date,
-          startTime: widget.startTime,
-          leavingTime: widget.leavingTime,
-          userId: userId,
-        );
-
-        final booking = Booking(
-          docId: docId,
-          slotName: widget.slotName,
-          date: widget.date,
-          startTime: widget.startTime,
-          leavingTime: widget.leavingTime,
-        );
-        Provider.of<BookingProvider>(context, listen: false).addBooking(booking);
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PaymentConfirmationScreen(
-              slotName: widget.slotName,
-              date: widget.date,
-              startTime: widget.startTime,
-              leavingTime: widget.leavingTime,
-              amount: _calculatedCost,
-            ),
+      // Instead of updating Firestore here, simply navigate to PaymentConfirmationScreen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentConfirmationScreen(
+            slotName: widget.slotName,
+            date: widget.date,
+            startTime: widget.startTime,
+            leavingTime: widget.leavingTime,
+            amount: _calculatedCost,
           ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
+        ),
+      );
     }
   }
 
@@ -136,7 +107,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'images/logo.jpg', // Update with your logo asset path
+              'images/logo.jpg', // Your logo asset path
               height: 30,        // Adjust the height as needed
             ),
             const SizedBox(width: 8),
@@ -149,13 +120,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
         centerTitle: true,
         elevation: 0,
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // 1. Constrain + Scale to avoid overflow,
-            //    then overlay "business" text in a Stack at the top-right.
+            // Credit card widget in a Stack
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -177,14 +146,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       isHolderNameVisible: true,
                       onCreditCardWidgetChange: (brand) {},
                     ),
-
-                    // 2. "business" text near top-right, but a bit to the left
-                    Positioned(
+                    // "business" text near top-right
+                    const Positioned(
                       top: 20,
-                      right: 30, // Increase this from 16 to shift left from the corner
+                      right: 30,
                       child: Text(
                         'business',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.black,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -196,8 +164,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // 3. Credit Card Form
+            // Credit card form
             CreditCardForm(
               formKey: _formKey,
               cardNumber: cardNumber,
@@ -234,8 +201,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // 4. Pay Now button
+            // Pay Now button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -258,8 +224,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // 5. Booking summary
+            // Booking summary
             Text(
               'Slot: ${widget.slotName}'
                   '\nDate: ${widget.date}'
