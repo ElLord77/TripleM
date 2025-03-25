@@ -169,8 +169,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                     // 2. "business" text near top-right, but a bit to the left
                     Positioned(
-                      top: 30,
-                      right: 40, // Increase this from 16 to shift left from the corner
+                      top: 20,
+                      right: 30, // Increase this from 16 to shift left from the corner
                       child: Text(
                         'business',
                         style: const TextStyle(

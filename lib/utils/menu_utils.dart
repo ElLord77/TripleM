@@ -41,9 +41,6 @@ void _onMenuSelected(BuildContext context, String value) {
       );
       break;
     case 'profile':
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Profile selected.")),
-      );
       // Navigate to the ProfileScreen
       Navigator.push(
         context,

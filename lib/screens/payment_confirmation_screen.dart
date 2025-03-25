@@ -24,6 +24,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Payment Confirmation'),
         backgroundColor: const Color(0xFF0F3460),
       ),

@@ -24,6 +24,7 @@ class ThankYouScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Thank You'),
         backgroundColor: const Color(0xFF0F3460),
         centerTitle: true,
