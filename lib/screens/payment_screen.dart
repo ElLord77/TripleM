@@ -28,17 +28,15 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  /// The GlobalKey for validating the form inside CreditCardForm (4.x).
   final _formKey = GlobalKey<FormState>();
 
-  /// Fields for real-time credit card display
+  // Card fields for dynamic updates
   String cardNumber = '';
   String expiryDate = '';
   String cardHolderName = '';
   String cvvCode = '';
   bool isCvvFocused = false;
 
-  /// Computed parking cost
   double _calculatedCost = 0.0;
 
   @override
@@ -47,7 +45,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     _calculatedCost = _computeParkingCost(widget.startTime, widget.leavingTime);
   }
 
-  /// Parse time string like "10:00 AM" using intl
   DateTime? _parseTime(String timeString) {
     try {
       final format = DateFormat("h:mm a");
@@ -58,7 +55,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  /// Compute cost based on time difference (example: £20/hour)
   double _computeParkingCost(String startTime, String leavingTime) {
     final start = _parseTime(startTime);
     final leave = _parseTime(leavingTime);
@@ -72,7 +68,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return cost;
   }
 
-  /// This callback updates local state whenever the user edits card fields
+  /// Called whenever the user types in the form
   void _onCreditCardModelChange(CreditCardModel data) {
     setState(() {
       cardNumber = data.cardNumber;
@@ -83,7 +79,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
   }
 
-  /// Payment action
   Future<void> _onPayNow() async {
     if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -94,7 +89,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final userId = userProvider.username;
 
       try {
-        // Reserve the slot in Firestore
         final docId = await FirestoreService().reserveSlot(
           slotName: widget.slotName,
           date: widget.date,
@@ -103,7 +97,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           userId: userId,
         );
 
-        // Update local booking state
         final booking = Booking(
           docId: docId,
           slotName: widget.slotName,
@@ -113,7 +106,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
         );
         Provider.of<BookingProvider>(context, listen: false).addBooking(booking);
 
-        // Navigate to confirmation screen
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -151,37 +143,50 @@ class _PaymentScreenState extends State<PaymentScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            /// 1. Constrain + Scale the card so it never overflows horizontally
+            // 1. Constrain + Scale to avoid overflow,
+            //    then overlay "business" text in a Stack at the top-right.
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: SizedBox(
-                width: 320, // typical credit card width in px
-                child: CreditCardWidget(
-                  cardNumber: cardNumber,
-                  expiryDate: expiryDate,
-                  cardHolderName: cardHolderName,
-                  cvvCode: cvvCode,
-                  showBackView: isCvvFocused,
-                  cardBgColor: const Color(0xFF0F3460),
-                  obscureCardNumber: false,
-                  obscureCardCvv: false,
+                width: 320,
+                height: 200, // enough height for card + custom text
+                child: Stack(
+                  children: [
+                    // The credit card widget
+                    CreditCardWidget(
+                      cardNumber: cardNumber,
+                      expiryDate: expiryDate,
+                      cardHolderName: cardHolderName,
+                      cvvCode: cvvCode,
+                      showBackView: isCvvFocused,
+                      cardBgColor: const Color(0xFFC0C0C0),
+                      obscureCardNumber: false,
+                      obscureCardCvv: false,
+                      isHolderNameVisible: true,
+                      onCreditCardWidgetChange: (brand) {},
+                    ),
 
-                  // In some 4.x versions, you might remove the chip by setting isChipVisible: false
-                  // If you get "named parameter not found" errors, remove this line:
-                  isChipVisible: false,
-
-                  // 4.x requires a brand callback
-                  onCreditCardWidgetChange: (brand) {
-                    // no-op
-                  },
-                  // No custom icons, no brand references
+                    // 2. "business" text near top-right, but a bit to the left
+                    Positioned(
+                      top: 30,
+                      right: 40, // Increase this from 16 to shift left from the corner
+                      child: Text(
+                        'business',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
             const SizedBox(height: 20),
 
-            /// 2. CreditCardForm with inputConfiguration (4.x approach)
+            // 3. Credit Card Form
             CreditCardForm(
               formKey: _formKey,
               cardNumber: cardNumber,
@@ -219,7 +224,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             const SizedBox(height: 20),
 
-            /// 3. Pay Now button
+            // 4. Pay Now button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -243,7 +248,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             const SizedBox(height: 20),
 
-            /// 4. Booking summary
+            // 5. Booking summary
             Text(
               'Slot: ${widget.slotName}'
                   '\nDate: ${widget.date}'
