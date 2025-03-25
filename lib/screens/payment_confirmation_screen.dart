@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdp_app/screens/dashboard_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/screens/thank_you_screen.dart';
 import 'package:gdp_app/screens/availability_screen.dart';
@@ -93,7 +94,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF5733),
                 ),
-                child: const Text('Proceed'),
+                child: const Text('Confirm'),
               ),
               const SizedBox(height: 10),
               // Cancel Button
@@ -103,7 +104,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AvailabilityScreen(),
+                      builder: (context) => const DashboardScreen(),
                     ),
                   );
                 },
