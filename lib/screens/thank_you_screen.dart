@@ -1,24 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
 
 class ThankYouScreen extends StatelessWidget {
   final String slotName;
-  final String date;
-  final String startTime;
-  final String leavingTime;
+  final DateTime startDateTime;
+  final DateTime endDateTime;
   final double amount;
 
   const ThankYouScreen({
     Key? key,
     required this.slotName,
-    required this.date,
-    required this.startTime,
-    required this.leavingTime,
+    required this.startDateTime,
+    required this.endDateTime,
     required this.amount,
   }) : super(key: key);
 
+  /// Compute days/hours difference
+  Map<String, int> _computeDaysHours(DateTime start, DateTime end) {
+    final diff = end.difference(start);
+    final totalDays = diff.inDays;
+    final leftoverHours = diff.inHours % 24;
+    return {
+      'days': totalDays,
+      'hours': leftoverHours,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Format the start/end in a readable way
+    final String startFormatted = DateFormat("yyyy-MM-dd h:mm a").format(startDateTime);
+    final String endFormatted   = DateFormat("yyyy-MM-dd h:mm a").format(endDateTime);
+
+    // Compute duration
+    final duration = _computeDaysHours(startDateTime, endDateTime);
+    final days  = duration['days'] ?? 0;
+    final hours = duration['hours'] ?? 0;
+
+    String durationText;
+    if (days == 0 && hours == 0) {
+      durationText = "Less than an hour";
+    } else {
+      durationText = "$days days and $hours hours";
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
@@ -27,8 +53,8 @@ class ThankYouScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'images/logo.jpg', // Update with your logo asset path
-              height: 30,       // Adjust the height as needed
+              'images/logo.jpg',
+              height: 30,
             ),
             const SizedBox(width: 8),
             const Text('Thank You'),
@@ -43,12 +69,12 @@ class ThankYouScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Picture Section
+              // (Optional) Thank-you image
               Padding(
                 padding: const EdgeInsets.only(bottom: 20.0),
                 child: Image.asset(
-                  'images/thankyou.jpg', // Your picture asset path
-                  height: 150,                     // Adjust the height as needed
+                  'images/thankyou.jpg',
+                  height: 150,
                 ),
               ),
               const Text(
@@ -62,8 +88,11 @@ class ThankYouScreen extends StatelessWidget {
               ),
               const SizedBox(height: 60),
               Text(
-                'Your parking slot ($slotName) has been booked on $date.\n'
-                    'Arrival: $startTime\nLeaving: $leavingTime\nTotal Cost: £$amount',
+                'Your parking slot ($slotName) has been booked.\n'
+                    'Start: $startFormatted\n'
+                    'End:   $endFormatted\n'
+                    'Duration: $durationText\n'
+                    'Total Cost: £$amount',
                 style: const TextStyle(
                   fontSize: 16,
                   color: Color(0xFFF9F9F9),

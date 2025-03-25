@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// The model for a booking, now with docId for Firestore deletion.
+/// The model for a booking, now with full DateTimes for multi-day usage.
 class Booking {
   final String docId;
   final String slotName;
-  final String date;
-  final String startTime;
-  final String leavingTime;
+  final DateTime startDateTime;
+  final DateTime endDateTime;
 
   Booking({
     required this.docId,
     required this.slotName,
-    required this.date,
-    required this.startTime,
-    required this.leavingTime,
+    required this.startDateTime,
+    required this.endDateTime,
   });
 }
 
@@ -45,5 +43,26 @@ class BookingProvider with ChangeNotifier {
     _currentBooking = null;
     _upcomingBookings.clear();
     notifyListeners();
+  }
+
+  /// Replace all bookings at once (useful after signing in a new user).
+  ///
+  /// This method clears any old bookings, then calls `addBooking` on each
+  /// new booking. Whichever booking is last in the list will become _currentBooking.
+  /// If you want a different logic (e.g. earliest booking as current), you can
+  /// adjust how they're sorted or added.
+  void setAllBookings(List<Booking> newBookings) {
+    // 1) Clear old data
+    clearBookings();
+
+    // 2) Optionally sort them if you want earliest or latest as current
+    // newBookings.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+
+    // 3) Add them so the last added becomes _currentBooking
+    for (var booking in newBookings) {
+      addBooking(booking);
+    }
+    // notifyListeners() is already called in addBooking, but you can call again if needed
+    // notifyListeners();
   }
 }

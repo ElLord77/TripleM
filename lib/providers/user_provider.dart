@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 
 class UserProvider with ChangeNotifier {
   String _username = "";
-  String _userPassword = "123456";
-  String _fullName = "John Doe";
+  String _userPassword = "123456";  // initial default password (can be "")
+  String _fullName = "";
   String _phoneNumber = "";
   String _address = "";
 
@@ -37,6 +37,16 @@ class UserProvider with ChangeNotifier {
 
   void setAddress(String addr) {
     _address = addr;
+    notifyListeners();
+  }
+
+  /// Clears all user-related fields (useful on logout)
+  void clearUserData() {
+    _username = "";
+    _userPassword = "";
+    _fullName = "";
+    _phoneNumber = "";
+    _address = "";
     notifyListeners();
   }
 }

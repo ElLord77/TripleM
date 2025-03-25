@@ -1,30 +1,53 @@
+// lib/screens/payment_confirmation_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:gdp_app/screens/dashboard_screen.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:gdp_app/screens/thank_you_screen.dart';
-import 'package:gdp_app/screens/availability_screen.dart';
-import 'package:gdp_app/services/firestore_service.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/providers/booking_provider.dart';
+import 'package:gdp_app/screens/thank_you_screen.dart';
+import 'package:gdp_app/screens/dashboard_screen.dart';
+import 'package:gdp_app/services/firestore_service.dart';
 
 class PaymentConfirmationScreen extends StatelessWidget {
   final String slotName;
-  final String date;
-  final String startTime;
-  final String leavingTime;
-  final double amount;
+  final DateTime startDateTime;
+  final DateTime endDateTime;
+  final double cost;
 
   const PaymentConfirmationScreen({
     Key? key,
     required this.slotName,
-    required this.date,
-    required this.startTime,
-    required this.leavingTime,
-    required this.amount,
+    required this.startDateTime,
+    required this.endDateTime,
+    required this.cost,
   }) : super(key: key);
+
+  /// Compute days/hours difference
+  Map<String, int> _computeDaysHours(DateTime start, DateTime end) {
+    final diff = end.difference(start);
+    final totalDays = diff.inDays;
+    final leftoverHours = diff.inHours % 24;
+    return {
+      'days': totalDays,
+      'hours': leftoverHours,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Duration
+    final bookingDuration = _computeDaysHours(startDateTime, endDateTime);
+    final days = bookingDuration['days'] ?? 0;
+    final hours = bookingDuration['hours'] ?? 0;
+    final durationText = (days == 0 && hours == 0)
+        ? "Less than an hour"
+        : "$days days and $hours hours";
+
+    // Format date/time
+    final startFmt = DateFormat("yyyy-MM-dd h:mm a").format(startDateTime);
+    final endFmt   = DateFormat("yyyy-MM-dd h:mm a").format(endDateTime);
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
@@ -32,10 +55,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              'images/logo.jpg', // Update with your logo asset path
-              height: 30,        // Adjust the height as needed
-            ),
+            Image.asset('images/logo.jpg', height: 30),
             const SizedBox(width: 8),
             const Text('Payment Confirmation'),
           ],
@@ -50,12 +70,15 @@ class PaymentConfirmationScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Confirm Payment for Slot: $slotName',
+                'You are booking Slot: $slotName',
                 style: const TextStyle(fontSize: 18, color: Color(0xFFF9F9F9)),
               ),
               const SizedBox(height: 10),
               Text(
-                'Date: $date\nArrival: $startTime\nLeaving: $leavingTime\nAmount: £$amount',
+                'Start: $startFmt\n'
+                    'End: $endFmt\n'
+                    'Duration: $durationText\n'
+                    'Cost: £$cost',
                 style: const TextStyle(fontSize: 16, color: Color(0xFFF9F9F9)),
                 textAlign: TextAlign.center,
               ),
@@ -63,38 +86,37 @@ class PaymentConfirmationScreen extends StatelessWidget {
               ElevatedButton(
                 onPressed: () async {
                   try {
+                    // 1) Get user email from provider
                     final userEmail = Provider.of<UserProvider>(context, listen: false).username;
-                    final String docId = await FirestoreService().reserveSlot(
-                      slotName: slotName,
-                      date: date,
-                      startTime: startTime,
-                      leavingTime: leavingTime,
-                      userEmail: userEmail, // <-- updated parameter name
-                    );
-                    print("Reserved docId: $docId"); // Debug output
 
-                    // Only add booking if docId is valid
+                    // 2) Reserve slot in Firestore
+                    final docId = await FirestoreService().reserveSlotDateTime(
+                      slotName: slotName,
+                      startDateTime: startDateTime,
+                      endDateTime: endDateTime,
+                      userEmail: userEmail,
+                    );
+
+                    // 3) Add to local BookingProvider
                     if (docId.isNotEmpty) {
                       final newBooking = Booking(
                         docId: docId,
                         slotName: slotName,
-                        date: date,
-                        startTime: startTime,
-                        leavingTime: leavingTime,
+                        startDateTime: startDateTime,
+                        endDateTime: endDateTime,
                       );
                       Provider.of<BookingProvider>(context, listen: false).addBooking(newBooking);
                     }
 
-                    // Navigate to ThankYouScreen upon successful reservation
+                    // 4) Navigate to ThankYouScreen
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ThankYouScreen(
                           slotName: slotName,
-                          date: date,
-                          startTime: startTime,
-                          leavingTime: leavingTime,
-                          amount: amount,
+                          startDateTime: startDateTime,
+                          endDateTime: endDateTime,
+                          amount: cost,
                         ),
                       ),
                     );
@@ -109,22 +131,16 @@ class PaymentConfirmationScreen extends StatelessWidget {
                 ),
                 child: const Text('Confirm'),
               ),
-
               const SizedBox(height: 10),
               // Cancel Button
               ElevatedButton(
                 onPressed: () {
-                  // Navigate back to the DashboardScreen (clearing intermediate routes)
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const DashboardScreen(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const DashboardScreen()),
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey,
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
                 child: const Text('Cancel'),
               ),
             ],

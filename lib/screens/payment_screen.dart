@@ -1,26 +1,26 @@
+// lib/screens/payment_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:gdp_app/providers/booking_provider.dart';
-import 'package:gdp_app/providers/user_provider.dart';
-import 'package:gdp_app/screens/payment_confirmation_screen.dart';
-import 'package:gdp_app/services/firestore_service.dart';
 import 'package:flutter_credit_card/flutter_credit_card.dart';
+import 'package:gdp_app/screens/payment_confirmation_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String slotName;
-  final String date;
-  final String startTime;
-  final String leavingTime;
-  final double amount;
+
+  // We'll parse these 4 strings into two DateTimes
+  final String startDate; // e.g. "2023-07-25"
+  final String startTime; // e.g. "12:00 PM"
+  final String endDate;   // e.g. "2023-07-27"
+  final String endTime;   // e.g. "3:00 PM"
 
   const PaymentScreen({
     Key? key,
     required this.slotName,
-    required this.date,
+    required this.startDate,
     required this.startTime,
-    required this.leavingTime,
-    required this.amount,
+    required this.endDate,
+    required this.endTime,
   }) : super(key: key);
 
   @override
@@ -30,45 +30,37 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Card fields for dynamic updates
+  // Card fields
   String cardNumber = '';
   String expiryDate = '';
   String cardHolderName = '';
   String cvvCode = '';
   bool isCvvFocused = false;
 
-  double _calculatedCost = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _calculatedCost = _computeParkingCost(widget.startTime, widget.leavingTime);
-  }
-
-  DateTime? _parseTime(String timeString) {
+  /// Parse date/time into a DateTime
+  DateTime? _parseDateTime(String dateStr, String timeStr) {
     try {
-      final format = DateFormat("h:mm a");
-      return format.parse(timeString);
+      // dateStr = "yyyy-MM-dd", timeStr = "h:mm a"
+      final dateObj = DateFormat("yyyy-MM-dd").parse(dateStr);
+      final timeObj = DateFormat("h:mm a").parse(timeStr);
+      return DateTime(dateObj.year, dateObj.month, dateObj.day, timeObj.hour, timeObj.minute);
     } catch (e) {
-      print("parseTime error: $e");
+      print("parseDateTime error: $e");
       return null;
     }
   }
 
-  double _computeParkingCost(String startTime, String leavingTime) {
-    final start = _parseTime(startTime);
-    final leave = _parseTime(leavingTime);
-
-    if (start == null || leave == null) return widget.amount;
-
-    final diff = leave.difference(start);
+  double _computeCost(DateTime start, DateTime end) {
+    // If end <= start, add 1 day
+    if (!end.isAfter(start)) {
+      end = end.add(const Duration(days: 1));
+    }
+    final diff = end.difference(start);
     final hours = diff.inMinutes / 60.0;
-    double cost = hours * 20.0;
-    if (cost < 0) cost = 0.0;
-    return cost;
+    final cost = hours * 20.0;
+    return cost < 0 ? 0.0 : cost;
   }
 
-  /// Called whenever the user types in the form
   void _onCreditCardModelChange(CreditCardModel data) {
     setState(() {
       cardNumber = data.cardNumber;
@@ -79,18 +71,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
   }
 
-  Future<void> _onPayNow() async {
+  void _onPayNow() {
     if (_formKey.currentState!.validate()) {
-      // Instead of updating Firestore here, simply navigate to PaymentConfirmationScreen
+      final startDT = _parseDateTime(widget.startDate, widget.startTime);
+      final endDT   = _parseDateTime(widget.endDate, widget.endTime);
+
+      if (startDT == null || endDT == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not parse date/time.")),
+        );
+        return;
+      }
+
+      // Compute cost
+      final cost = _computeCost(startDT, endDT);
+
+      // Go to PaymentConfirmation
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => PaymentConfirmationScreen(
             slotName: widget.slotName,
-            date: widget.date,
-            startTime: widget.startTime,
-            leavingTime: widget.leavingTime,
-            amount: _calculatedCost,
+            startDateTime: startDT,
+            endDateTime: endDT,
+            cost: cost,
           ),
         ),
       );
@@ -106,10 +110,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              'images/logo.jpg', // Your logo asset path
-              height: 30,        // Adjust the height as needed
-            ),
+            Image.asset('images/logo.jpg', height: 30),
             const SizedBox(width: 8),
             const Text(
               'Payment Method',
@@ -124,16 +125,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Credit card widget in a Stack
+            // Credit Card Widget
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: SizedBox(
                 width: 320,
-                height: 200, // enough height for card + custom text
+                height: 200,
                 child: Stack(
                   children: [
-                    // The credit card widget
                     CreditCardWidget(
                       cardNumber: cardNumber,
                       expiryDate: expiryDate,
@@ -146,7 +146,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       isHolderNameVisible: true,
                       onCreditCardWidgetChange: (brand) {},
                     ),
-                    // "business" text near top-right
                     const Positioned(
                       top: 20,
                       right: 30,
@@ -164,7 +163,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            // Credit card form
+
+            // Credit Card Form
             CreditCardForm(
               formKey: _formKey,
               cardNumber: cardNumber,
@@ -201,7 +201,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            // Pay Now button
+
+            // Pay Now Button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -222,17 +223,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            // Booking summary
-            Text(
-              'Slot: ${widget.slotName}'
-                  '\nDate: ${widget.date}'
-                  '\nArrival: ${widget.startTime}'
-                  '\nLeaving: ${widget.leavingTime}'
-                  '\nCost: £${_calculatedCost.toStringAsFixed(2)}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, color: Colors.white70),
             ),
           ],
         ),

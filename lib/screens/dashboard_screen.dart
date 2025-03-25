@@ -1,30 +1,39 @@
+// lib/screens/dashboard_screen.dart
+
 import 'package:flutter/material.dart';
+import 'package:gdp_app/screens/contact_us_screen.dart';
+import 'package:gdp_app/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 import 'package:gdp_app/providers/booking_provider.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/availability_screen.dart';
-import 'package:gdp_app/utils/menu_utils.dart'; // If you have a 3-dot menu
+import 'package:gdp_app/screens/profile_screen.dart'; // If you have a ProfileScreen
+import 'package:gdp_app/utils/menu_utils.dart';       // If you have a 3-dot menu
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
   /// Show a confirmation dialog and return true if confirmed.
   Future<bool> _showConfirmationDialog(
-      BuildContext context, String title, String content) async {
+      BuildContext context,
+      String title,
+      String content,
+      ) async {
     return await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: Text(title),
         content: Text(content),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text("No"),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text("Yes"),
           ),
         ],
@@ -58,7 +67,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  /// Cancel all bookings (both current and upcoming) with confirmation.
+  /// Cancel all bookings with confirmation.
   Future<void> _cancelAllBookings(BuildContext context) async {
     bool confirmed = await _showConfirmationDialog(
       context,
@@ -70,13 +79,13 @@ class DashboardScreen extends StatelessWidget {
     final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
 
     // Prepare a list of all bookings to cancel
-    final List bookingList = [];
+    final List<Booking> bookingList = [];
     if (bookingProvider.currentBooking != null) {
-      bookingList.add(bookingProvider.currentBooking);
+      bookingList.add(bookingProvider.currentBooking!);
     }
     bookingList.addAll(bookingProvider.upcomingBookings);
 
-    // Iterate and cancel each booking in Firestore and local provider
+    // Iterate and cancel each booking
     for (var booking in bookingList) {
       if (booking.docId.isNotEmpty) {
         await FirebaseFirestore.instance
@@ -92,23 +101,30 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
+  /// Format date/time
+  String _formatDateTime(DateTime dt) {
+    return DateFormat("yyyy-MM-dd h:mm a").format(dt);
+  }
+
   @override
   Widget build(BuildContext context) {
     final bookingProvider = Provider.of<BookingProvider>(context);
     final currentBooking = bookingProvider.currentBooking;
 
-    // Fetch the user’s current email or name from UserProvider
+    // Show user name from UserProvider
     final userProvider = Provider.of<UserProvider>(context);
-    final userName = userProvider.username.isNotEmpty
-        ? userProvider.username
+    final displayName = userProvider.fullName.isNotEmpty
+        ? userProvider.fullName
         : "User";
 
+    // Build text for current booking
     String currentBookingText = "No current booking";
     if (currentBooking != null) {
+      final startFmt = _formatDateTime(currentBooking.startDateTime);
+      final endFmt   = _formatDateTime(currentBooking.endDateTime);
       currentBookingText = "Slot: ${currentBooking.slotName}\n"
-          "Date: ${currentBooking.date}\n"
-          "Arrival: ${currentBooking.startTime}\n"
-          "Leaving: ${currentBooking.leavingTime}";
+          "Start: $startFmt\n"
+          "End:   $endFmt";
     }
 
     return Scaffold(
@@ -117,8 +133,8 @@ class DashboardScreen extends StatelessWidget {
         title: Row(
           children: [
             Image.asset(
-              'images/logo.jpg', // Your logo asset path
-              height: 30,       // Adjust the height to make it smaller
+              'images/logo.jpg',
+              height: 30,
             ),
             const SizedBox(width: 8),
             const Text("Dashboard"),
@@ -131,19 +147,99 @@ class DashboardScreen extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              "Welcome, $userName!",
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+            // 1) Greeting with Avatar
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: Colors.white12,
+                  child: const Icon(Icons.person, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 10),
+                // Let name wrap to multiple lines if it's long
+                Expanded(
+                  child: Text(
+                    "Welcome, $displayName!",
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    softWrap: true,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
 
-            // Current Booking Card
+            // 2) Quick Action Shortcuts in a Wrap to prevent overflow
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12.0,
+              runSpacing: 12.0,
+              children: [
+                // Availability Button
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.search, color: Colors.white),
+                  label: const Text("Availability"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F3460),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20), // more pill-like
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AvailabilityScreen()),
+                    );
+                  },
+                ),
+                // Profile Button
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.person, color: Colors.white),
+                  label: const Text("Profile"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F3460),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20), // more pill-like
+                    ),
+                  ),
+                  onPressed: () {
+                    // Example if you have a ProfileScreen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                    );
+                  },
+                ),
+                // Settings Button
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.settings, color: Colors.white),
+                  label: const Text("Settings"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F3460),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20), // more pill-like
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // 3) Current Booking
             Card(
               color: Colors.white10,
               shape: RoundedRectangleBorder(
@@ -152,7 +248,7 @@ class DashboardScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(15),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Text(
                       "Current Booking",
@@ -176,7 +272,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Upcoming Bookings
+            // 4) Upcoming Bookings
             const Text(
               "Upcoming Bookings",
               style: TextStyle(
@@ -192,6 +288,13 @@ class DashboardScreen extends StatelessWidget {
               itemCount: bookingProvider.upcomingBookings.length,
               itemBuilder: (context, index) {
                 final booking = bookingProvider.upcomingBookings[index];
+                final startFmt = _formatDateTime(booking.startDateTime);
+                final endFmt   = _formatDateTime(booking.endDateTime);
+
+                final bookingText = "Slot: ${booking.slotName}\n"
+                    "Start: $startFmt\n"
+                    "End:   $endFmt";
+
                 return Card(
                   color: Colors.white10,
                   shape: RoundedRectangleBorder(
@@ -204,12 +307,9 @@ class DashboardScreen extends StatelessWidget {
                       style: const TextStyle(color: Colors.white),
                     ),
                     subtitle: Text(
-                      "Date: ${booking.date}\n"
-                          "Arrival: ${booking.startTime}\n"
-                          "Leaving: ${booking.leavingTime}",
+                      bookingText,
                       style: const TextStyle(color: Colors.white70),
                     ),
-                    // Cancel button for each upcoming booking with confirmation
                     trailing: IconButton(
                       icon: const Icon(Icons.cancel, color: Colors.red),
                       onPressed: () => _cancelBooking(context, booking),
@@ -220,7 +320,26 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Cancel All Bookings Button (shown if there is at least one booking)
+            // (Optional) Stats or Ended Bookings
+            /*
+            Card(
+              color: Colors.white10,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ListTile(
+                leading: const Icon(Icons.bar_chart, color: Colors.white),
+                title: const Text("Booking Stats", style: TextStyle(color: Colors.white)),
+                subtitle: const Text(
+                  "Total Bookings: 5\nThis Month’s Spent: £100",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                onTap: () {
+                  // navigate to a stats page if needed
+                },
+              ),
+            ),
+            */
+
+            // Cancel All if there's at least one booking
             if (currentBooking != null || bookingProvider.upcomingBookings.isNotEmpty)
               Center(
                 child: ElevatedButton(
@@ -233,7 +352,48 @@ class DashboardScreen extends StatelessWidget {
               ),
             const SizedBox(height: 20),
 
-            // Check Availability Button
+            // 5) Contact Us Section
+            Card(
+              color: Colors.white10,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.support_agent, color: Colors.white, size: 36),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: const [
+                          Text(
+                            "Contact Us",
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "Need help or have questions? Get in touch with our support team.",
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ContactScreen()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // 6) Check Availability
             Center(
               child: ElevatedButton(
                 onPressed: () {
@@ -242,6 +402,12 @@ class DashboardScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => const AvailabilityScreen()),
                   );
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF5733),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 child: const Text("Check Availability"),
               ),
             ),

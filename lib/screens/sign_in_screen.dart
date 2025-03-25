@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
-// Import your providers and destination screens
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/providers/booking_provider.dart';
 import 'package:gdp_app/services/firestore_service.dart';
@@ -23,7 +22,6 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers for email/password fields
   final TextEditingController _emailController    = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -37,34 +35,44 @@ class _SignInScreenState extends State<SignInScreen> {
           password: _passwordController.text.trim(),
         );
 
-        // 2) Get the signed-in user's actual email (avoid using doc['email']).
-        final actualEmail = userCredential.user?.email ?? _emailController.text.trim();
+        // 2) Get the current user's UID
+        final uid = userCredential.user!.uid;
 
-        // 3) Update the UserProvider with the actual email.
-        final userProvider = Provider.of<UserProvider>(context, listen: false);
-        userProvider.setUsername(actualEmail);
+        // 3) Fetch the user doc from /users/{uid}
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
 
-        // 4) Fetch user profile from /users/{email} (if it exists) and update provider
-        final profileData = await FirestoreService().getUserProfileByEmail(actualEmail);
-        if (profileData != null) {
-          userProvider.setFullName(profileData['fullName'] ?? '');
-          userProvider.setPhoneNumber(profileData['phoneNumber'] ?? '');
-          userProvider.setAddress(profileData['address'] ?? '');
-          // If you store the email field in that doc as well:
-          // userProvider.setUsername(profileData['email'] ?? actualEmail);
+        if (!userDoc.exists) {
+          throw Exception("User document not found in Firestore.");
         }
 
-        // 5) Fetch bookings from Firestore for this user (using the actualEmail).
-        final bookings = await FirestoreService().getBookings(userEmail: actualEmail);
+        final data = userDoc.data() as Map<String, dynamic>?;
 
-        // 6) Update the BookingProvider with the fetched bookings
+        // 4) If userDoc has 'fullName' and 'email', store them in UserProvider
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+        // Firestore doc might have: { "fullName": "John Doe", "email": "johndoe@example.com", ... }
+        final firestoreFullName = data?['fullName'] ?? '';
+        final firestoreEmail    = data?['email'] ?? '';
+
+        userProvider.setFullName(firestoreFullName);
+        userProvider.setUsername(firestoreEmail);
+
+        // 5) If you store bookings by userEmail in Firestore, fetch them:
         final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
         bookingProvider.clearBookings();
-        for (var booking in bookings) {
-          bookingProvider.addBooking(booking);
+
+        if (firestoreEmail.isNotEmpty) {
+          // Example: getBookings by userEmail
+          final bookings = await FirestoreService().getBookings(userEmail: firestoreEmail);
+          for (var booking in bookings) {
+            bookingProvider.addBooking(booking);
+          }
         }
 
-        // 7) Navigate to DashboardScreen
+        // 6) Navigate to DashboardScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -73,12 +81,10 @@ class _SignInScreenState extends State<SignInScreen> {
         );
 
       } on FirebaseAuthException catch (e) {
-        // If sign in fails (e.g., wrong password, user not found)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message ?? 'Error during sign in')),
         );
       } catch (e) {
-        // Any other error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),
         );
@@ -92,10 +98,7 @@ class _SignInScreenState extends State<SignInScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset(
-              'images/logo.jpg', // Your logo asset path
-              height: 30, // Adjust the height to make the logo smaller
-            ),
+            Image.asset('images/logo.jpg', height: 30),
             const SizedBox(width: 8),
             const Text("Sign In"),
           ],
@@ -105,11 +108,11 @@ class _SignInScreenState extends State<SignInScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Logo Section
+            // Logo
             Padding(
               padding: const EdgeInsets.only(bottom: 20.0),
               child: Image.asset(
-                'images/logo.jpg', // Ensure this path matches your asset
+                'images/logo.jpg',
                 height: 120,
               ),
             ),
@@ -130,6 +133,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     },
                   ),
                   const SizedBox(height: 20),
+
                   // Password Field
                   TextFormField(
                     controller: _passwordController,
@@ -143,6 +147,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     },
                   ),
                   const SizedBox(height: 30),
+
                   // Sign In Button
                   SizedBox(
                     width: double.infinity,
@@ -153,11 +158,11 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // Forgot Password and Register Buttons
+
+                  // Forgot Password / Register
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Forgot Password Button
                       TextButton(
                         onPressed: () {
                           Navigator.push(
@@ -169,7 +174,6 @@ class _SignInScreenState extends State<SignInScreen> {
                         },
                         child: const Text("Forgot Password?"),
                       ),
-                      // Register Button
                       TextButton(
                         onPressed: () {
                           Navigator.pushReplacement(

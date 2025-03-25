@@ -1,9 +1,11 @@
+// lib/screens/register_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
-import 'package:gdp_app/screens/sign_in_screen.dart'; // Import the SignInScreen
+import 'package:gdp_app/screens/sign_in_screen.dart';
 import 'package:provider/provider.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -16,25 +18,24 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _emailController    = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-
-  // New: phone number controller
-  final TextEditingController _phoneController    = TextEditingController();
+  final TextEditingController _fullNameController    = TextEditingController();
+  final TextEditingController _emailController       = TextEditingController();
+  final TextEditingController _phoneController       = TextEditingController();
+  final TextEditingController _passwordController    = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   Future<void> _onRegister() async {
     if (_formKey.currentState!.validate()) {
       try {
-        // 1) Create user with Firebase Auth
+        // 1) Create user in Firebase Auth
         UserCredential userCredential = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        // 2) Grab the userId (uid)
-        String uid = userCredential.user!.uid;
+        // 2) Grab the user’s UID
+        final uid = userCredential.user!.uid;
 
         // 3) Store user info in Firestore at /users/{uid}
         await FirebaseFirestore.instance
@@ -43,25 +44,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
             .set({
           'fullName':   _fullNameController.text.trim(),
           'email':      _emailController.text.trim(),
-          'phone':      _phoneController.text.trim(),  // Save phone
+          'phoneNumber': _phoneController.text.trim(),
           'createdAt':  FieldValue.serverTimestamp(),
         });
 
-        // 4) Update UserProvider with new data
+        // 4) Update UserProvider
         final userProvider = Provider.of<UserProvider>(context, listen: false);
-        userProvider.setUsername(_emailController.text.trim());
         userProvider.setFullName(_fullNameController.text.trim());
-        userProvider.setPhoneNumber(_phoneController.text.trim()); // Save phone locally
+        userProvider.setUsername(_emailController.text.trim());
+        userProvider.setPhoneNumber(_phoneController.text.trim());
 
-        // 5) Navigate directly to DashboardScreen
+        // 5) Navigate to Dashboard
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => const DashboardScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
         );
       } on FirebaseAuthException catch (e) {
-        // If there's an auth error, show it
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message ?? 'Error during registration')),
         );
@@ -79,10 +77,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset(
-              'images/logo.jpg', // Your logo asset path
-              height: 30, // Adjust the height to make the logo smaller
-            ),
+            Image.asset('images/logo.jpg', height: 30),
             const SizedBox(width: 8),
             const Text("Register"),
           ],
@@ -92,12 +87,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Optional: Logo Section
+            // Logo
             Padding(
               padding: const EdgeInsets.only(bottom: 20.0),
               child: Image.asset(
-                'images/logo.jpg', // Update this path if needed
-                height: 120,       // Adjust height as desired
+                'images/logo.jpg',
+                height: 120,
               ),
             ),
             // Registration Form
@@ -132,7 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Phone Number
+                  // Phone
                   TextFormField(
                     controller: _phoneController,
                     decoration: const InputDecoration(labelText: "Phone Number"),
@@ -161,6 +156,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 15),
+
+                  // Confirm Password
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    decoration: const InputDecoration(labelText: "Confirm Password"),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Please confirm your password";
+                      }
+                      if (value != _passwordController.text) {
+                        return "Passwords do not match";
+                      }
+                      return null;
+                    },
+                  ),
                   const SizedBox(height: 30),
 
                   // Register Button
@@ -170,14 +182,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Already have an account? Sign In Button
+                  // Already have an account?
                   TextButton(
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => const SignInScreen(),
-                        ),
+                        MaterialPageRoute(builder: (context) => const SignInScreen()),
                       );
                     },
                     child: const Text("Already have an account? Sign In"),
