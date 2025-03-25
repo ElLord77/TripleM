@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/screens/sign_in_screen.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
+import 'package:gdp_app/screens/profile_screen.dart';
+
 
 PopupMenuButton<String> buildOverflowMenu(BuildContext context) {
   return PopupMenuButton<String>(
@@ -42,7 +44,13 @@ void _onMenuSelected(BuildContext context, String value) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Profile selected.")),
       );
+      // Navigate to the ProfileScreen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ProfileScreen()),
+      );
       break;
+
     case 'settings':
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Settings selected.")),

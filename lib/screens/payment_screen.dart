@@ -143,7 +143,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Mock credit card display
+              // Visa card image display
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(15),
@@ -151,23 +151,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   color: Colors.white10,
                   borderRadius: BorderRadius.circular(15),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('business', style: TextStyle(fontSize: 16, color: Colors.white54)),
-                    SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('2221 0012 3412 3456',
-                            style: TextStyle(fontSize: 20, letterSpacing: 2, color: Colors.white)),
-                        SizedBox(width: 40, height: 30),
-                      ],
-                    ),
-                    SizedBox(height: 10),
-                    Text('12/23      Lee M. Cardholder',
-                        style: TextStyle(fontSize: 14, color: Colors.white70)),
-                  ],
+                child: Image.asset(
+                  'assets/business-card-1944.png', // Ensure this is the correct path to your image
+                  height: 100, // Adjust height as needed
+                  width: double.infinity,
                 ),
               ),
               const SizedBox(height: 20),
@@ -194,7 +181,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Pay Now
+              // Pay Now button
               SizedBox(
                 width: double.infinity,
                 height: 50,
