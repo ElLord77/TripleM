@@ -1,5 +1,3 @@
-// lib/screens/thank_you_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
 
@@ -39,13 +37,20 @@ class ThankYouScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF0F3460),
         centerTitle: true,
       ),
-
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Picture Section
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20.0),
+                child: Image.asset(
+                  'images/thankyou.jpg', // Your picture asset path
+                  height: 150,                     // Adjust the height as needed
+                ),
+              ),
               const Text(
                 'Thank you for your payment!',
                 style: TextStyle(
@@ -55,7 +60,7 @@ class ThankYouScreen extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 60),
               Text(
                 'Your parking slot ($slotName) has been booked on $date.\n'
                     'Arrival: $startTime\nLeaving: $leavingTime\nTotal Cost: £$amount',
