@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:gdp_app/screens/app_dropdown1.dart';
 import 'package:gdp_app/screens/sign_in_screen.dart';
 import 'package:gdp_app/screens/register_screen.dart';
+import 'package:gdp_app/screens/non_registered_user_screen.dart';  // Import the new screen
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -55,6 +57,14 @@ class HomeScreen extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => const RegisterScreen()),
                 ),
                 child: const Text('Register'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NonRegisteredUserScreen()), // Navigate to Non-Registered User Screen
+                ),
+                child: const Text('Enter Parking (Non-Registered)'),
               ),
             ],
           ),
