@@ -1,7 +1,4 @@
-// lib/screens/non_registered_user_screen.dart
-
 import 'package:flutter/material.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class NonRegisteredUserScreen extends StatefulWidget {
@@ -13,10 +10,7 @@ class NonRegisteredUserScreen extends StatefulWidget {
 }
 
 class _NonRegisteredUserScreenState extends State<NonRegisteredUserScreen> {
-  String? imageUrl;
   String? plateNumber;
-  String? status;
-  String? parkingDuration;
   double? fee;
 
   @override
@@ -42,32 +36,11 @@ class _NonRegisteredUserScreenState extends State<NonRegisteredUserScreen> {
         setState(() {
           plateNumber = parkingData['plate_number'];
           fee = parkingData['fee'].toDouble();
-          status = parkingData['status'];
-          String imagePath = parkingData['imagePath'] ?? ''; // Adjust field name if exists
-
-          // Fetch the image URL from Firebase Storage
-          FirebaseStorage storage = FirebaseStorage.instance;
-          storage.ref().child(imagePath).getDownloadURL().then((url) {
-            setState(() {
-              imageUrl = url;
-            });
-          });
-
-          // Calculate parking duration
-          DateTime entryTime = (parkingData['entry_time'] as Timestamp).toDate();
-          DateTime exitTime = (parkingData['exit_time'] as Timestamp).toDate();
-          Duration duration = exitTime.difference(entryTime);
-          parkingDuration = formatDuration(duration);
         });
       }
     } catch (e) {
       print("Error fetching parking data: $e");
     }
-  }
-
-  // Format parking duration into hours and minutes
-  String formatDuration(Duration duration) {
-    return '${duration.inHours} hours and ${duration.inMinutes % 60} minutes';
   }
 
   @override
@@ -76,7 +49,7 @@ class _NonRegisteredUserScreenState extends State<NonRegisteredUserScreen> {
       appBar: AppBar(
         title: const Text("Non-Registered User Parking"),
       ),
-      body: imageUrl == null
+      body: plateNumber == null || fee == null
           ? const Center(child: CircularProgressIndicator())  // Show loading indicator while fetching data
           : Padding(
         padding: const EdgeInsets.all(16.0),
@@ -93,17 +66,7 @@ class _NonRegisteredUserScreenState extends State<NonRegisteredUserScreen> {
             const SizedBox(height: 16),
             Text("Plate Number: $plateNumber"),
             const SizedBox(height: 8),
-            Text("Parking Duration: $parkingDuration"),
-            const SizedBox(height: 8),
             Text("Fee: \$${fee?.toStringAsFixed(2)}"),
-            const SizedBox(height: 8),
-            Text("Status: $status"),
-            const SizedBox(height: 16),
-            Center(
-              child: imageUrl == null
-                  ? const CircularProgressIndicator()
-                  : Image.network(imageUrl!),
-            ),
           ],
         ),
       ),
