@@ -3,16 +3,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_credit_card/flutter_credit_card.dart';
+// Import the PaymentConfirmationScreen that expects documentId
 import 'package:gdp_app/screens/payment_confirmation_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String slotName;
-
-  // We'll parse these 4 strings into two DateTimes
-  final String startDate; // e.g. "2023-07-25"
-  final String startTime; // e.g. "12:00 PM"
-  final String endDate;   // e.g. "2023-07-27"
-  final String endTime;   // e.g. "3:00 PM"
+  final String startDate;
+  final String startTime;
+  final String endDate;
+  final String endTime;
+  final double fee;
+  final String documentId; // <-- This parameter is required
 
   const PaymentScreen({
     Key? key,
@@ -21,6 +22,8 @@ class PaymentScreen extends StatefulWidget {
     required this.startTime,
     required this.endDate,
     required this.endTime,
+    required this.fee,
+    required this.documentId, // <-- Make sure this is in your constructor
   }) : super(key: key);
 
   @override
@@ -30,17 +33,14 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Card fields
   String cardNumber = '';
   String expiryDate = '';
   String cardHolderName = '';
   String cvvCode = '';
   bool isCvvFocused = false;
 
-  /// Parse date/time into a DateTime
   DateTime? _parseDateTime(String dateStr, String timeStr) {
     try {
-      // dateStr = "yyyy-MM-dd", timeStr = "h:mm a"
       final dateObj = DateFormat("yyyy-MM-dd").parse(dateStr);
       final timeObj = DateFormat("h:mm a").parse(timeStr);
       return DateTime(dateObj.year, dateObj.month, dateObj.day, timeObj.hour, timeObj.minute);
@@ -48,17 +48,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       print("parseDateTime error: $e");
       return null;
     }
-  }
-
-  double _computeCost(DateTime start, DateTime end) {
-    // If end <= start, add 1 day
-    if (!end.isAfter(start)) {
-      end = end.add(const Duration(days: 1));
-    }
-    final diff = end.difference(start);
-    final hours = diff.inMinutes / 60.0;
-    final cost = hours * 20.0;
-    return cost < 0 ? 0.0 : cost;
   }
 
   void _onCreditCardModelChange(CreditCardModel data) {
@@ -83,10 +72,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         return;
       }
 
-      // Compute cost
-      final cost = _computeCost(startDT, endDT);
-
-      // Go to PaymentConfirmation
+      // Navigate to PaymentConfirmationScreen, passing necessary identifiers
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -94,7 +80,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
             slotName: widget.slotName,
             startDateTime: startDT,
             endDateTime: endDT,
-            cost: cost,
+            documentId: widget.documentId, // Pass the documentId
+            // 'cost' parameter is not passed here, as PaymentConfirmationScreen fetches its own fee
           ),
         ),
       );
@@ -125,7 +112,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Credit Card Widget
+            Text(
+                "Amount to Pay: £${widget.fee.toStringAsFixed(2)}",
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)
+            ),
+            const SizedBox(height: 20),
+
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -163,8 +155,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Credit Card Form
             CreditCardForm(
               formKey: _formKey,
               cardNumber: cardNumber,
@@ -201,8 +191,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Pay Now Button
             SizedBox(
               width: double.infinity,
               height: 50,

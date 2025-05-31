@@ -1,3 +1,4 @@
+// lib/screens/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -39,13 +40,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<TextEditingController> _plateControllers = [];
   bool _loading = true;
 
+  // Updated Regex:
+  // - 1-4 Arabic letters, with a single space between each if more than one.
+  // - Exactly TWO spaces as a separator.
+  // - 1-4 Arabic-Indic digits, with a single space between each if more than one.
+  final RegExp _plateRegex = RegExp(
+    r'^[\u0621-\u064A](?:\s[\u0621-\u064A]){0,3}\s[\u0660-\u0669](?:\s[\u0660-\u0669]){0,3}$', // Changed \s{2} to \s
+    unicode: true,
+  );
+
+
   @override
   void initState() {
     super.initState();
     _loadProfileData();
   }
 
-  /// Load profile data and plates from Firestore into controllers
   Future<void> _loadProfileData() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
@@ -68,13 +78,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               .toList();
         }
       }
+      _emailController.text = currentUser.email ?? _emailController.text;
     } catch (e) {
-      // Handle errors if needed
+      print("Error loading profile data: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load profile data: ${e.toString()}')),
+      );
     } finally {
       if (_plateControllers.isEmpty) {
         _plateControllers.add(TextEditingController());
       }
-      setState(() => _loading = false);
+      if(mounted){
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -84,11 +100,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  /// Save updated profile and plates, enforcing unique plates across users
   Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please correct errors in your profile information.')),
+      );
+      return;
+    }
+
+    bool allPlatesValid = true;
+    for (var controller in _plateControllers) {
+      final value = controller.text.trim();
+      if (value.isNotEmpty) {
+        // Debug prints (can be removed after confirming fix)
+        print("--- Validating in _saveProfile ---");
+        print("Original Controller Text: '${controller.text}'");
+        print("Trimmed Value for Regex: '$value'");
+        print("Code Units for Regex: ${value.codeUnits}");
+        final bool isMatch = _plateRegex.hasMatch(value);
+        print("Regex Match: $isMatch with Pattern: ${_plateRegex.pattern}");
+        print("---------------------------------");
+
+        if (!isMatch) {
+          allPlatesValid = false;
+          print("Invalid plate found in _saveProfile (confirmed by detailed check): $value");
+          break;
+        }
+      }
+    }
+
+    if (!allPlatesValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('One or more plate numbers have an invalid format. Use: X X X  Y Y Y Y')), // Updated example
+      );
+      return;
+    }
+
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
+
+    setState(() => _loading = true);
+
     final uid = currentUser.uid;
     final fullName = _fullNameController.text.trim();
     final phone = _phoneController.text.trim();
@@ -98,53 +150,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .where((p) => p.isNotEmpty)
         .toList();
 
-    // Check uniqueness in Firestore
     if (plates.isNotEmpty) {
-      final conflictQuery = await FirebaseFirestore.instance
-          .collection('users')
-          .where('plateNumbers', arrayContainsAny: plates)
-          .get();
-      // Exclude current user
-      for (var doc in conflictQuery.docs) {
-        if (doc.id != uid) {
-          final conflictPlates = (doc.data()['plateNumbers'] as List)
-              .map((e) => e.toString())
-              .toSet()
-              .intersection(plates.toSet());
-          if (conflictPlates.isNotEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text(
-                      'Plate(s) ${conflictPlates.join(', ')} already in use')),
-            );
-            return;
+      try {
+        final conflictQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .where('plateNumbers', arrayContainsAny: plates)
+            .get();
+
+        for (var doc in conflictQuery.docs) {
+          if (doc.id != uid) {
+            final existingPlates = List<String>.from(doc.data()['plateNumbers'] ?? []);
+            final conflictPlates = plates.where((p) => existingPlates.contains(p)).toList();
+            if (conflictPlates.isNotEmpty) {
+              if(mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Plate(s) ${conflictPlates.join(', ')} already in use by another user.')),
+                );
+                setState(() => _loading = false);
+              }
+              return;
+            }
           }
         }
+      } catch (e) {
+        print("Error checking plate uniqueness: $e");
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error checking plate uniqueness: ${e.toString()}')),
+          );
+          setState(() => _loading = false);
+        }
+        return;
       }
     }
 
-    // All clear: write to Firestore
     try {
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'fullName': fullName,
+        'email': _emailController.text.trim(),
         'phoneNumber': phone,
         'address': address,
         'plateNumbers': plates,
       }, SetOptions(merge: true));
 
-      // Update provider
       final userProv = Provider.of<UserProvider>(context, listen: false);
       userProv.setFullName(fullName);
       userProv.setPhoneNumber(phone);
-      userProv.setAddress(address);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!')),
-      );
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully!')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating profile: \$e')),
-      );
+      print("Error updating profile: $e");
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating profile: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if(mounted){
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -178,7 +246,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Plate section
             const Text(
               'My Car Plates',
               style: TextStyle(
@@ -188,48 +255,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            ..._plateControllers.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final ctrl = entry.value;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: ctrl,
-                        inputFormatters: [ArabicNumbersInputFormatter()],
-                        textDirection: TextDirection.rtl,
-                        decoration: InputDecoration(
-                          labelText: 'Plate ${idx + 1}',
-                          hintText: 'مثال: أ ب ج ١٢٣٤',
-                          hintTextDirection: TextDirection.rtl,
-                          filled: true,
-                          fillColor: Colors.white10,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+            Column(
+              children: _plateControllers.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final ctrl = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: ctrl,
+                          inputFormatters: [ArabicNumbersInputFormatter()],
+                          textDirection: TextDirection.rtl,
+                          decoration: InputDecoration(
+                            labelText: 'Plate ${idx + 1}',
+                            labelStyle: const TextStyle(color: Colors.white70),
+                            hintText: 'مثال: أ ب ج  ١ ٢ ٣ ٤', // Updated hint for two spaces
+                            hintStyle: const TextStyle(color: Colors.white54),
+                            hintTextDirection: TextDirection.rtl,
+                            filled: true,
+                            fillColor: Colors.white10,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: Color(0xFFE94560)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: Colors.redAccent),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
+                          style: const TextStyle(color: Colors.white),
+                          validator: (v) {
+                            final trimmedValueOriginalValidator = v?.trim() ?? '';
+                            if (trimmedValueOriginalValidator.isNotEmpty) {
+                              final bool isMatchOriginalValidator = _plateRegex.hasMatch(trimmedValueOriginalValidator);
+                              if (!isMatchOriginalValidator) {
+                                return 'Invalid format. Use: X X X  Y Y Y Y'; // Updated error message
+                              }
+                            }
+                            return null;
+                          },
                         ),
-                        style: const TextStyle(color: Colors.white),
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Enter plate number'
-                            : null,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (_plateControllers.length > 1)
+                      const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
+                        icon: const Icon(Icons.delete, color: Colors.redAccent),
                         onPressed: () {
                           setState(() {
                             _plateControllers.removeAt(idx).dispose();
+                            if (_plateControllers.isEmpty) {
+                              _plateControllers.add(TextEditingController());
+                            }
                           });
                         },
                       ),
-                  ],
-                ),
-              );
-            }).toList(),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
@@ -240,9 +333,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const Divider(color: Colors.white38, height: 40),
-            // Profile section
             const Text(
-              'Edit Profile',
+              'Edit Profile Information',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.white,
@@ -263,6 +355,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fillColor: Colors.white10,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderSide:
@@ -281,17 +374,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       labelText: 'Email',
                       labelStyle: const TextStyle(color: Colors.white70),
                       filled: true,
-                      fillColor: Colors.white10,
+                      fillColor: Colors.white24,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide:
-                        const BorderSide(color: Color(0xFFE94560)),
-                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
                       ),
                     ),
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white70),
                     readOnly: true,
                   ),
                   const SizedBox(height: 15),
@@ -304,6 +393,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fillColor: Colors.white10,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderSide:
@@ -312,6 +402,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     style: const TextStyle(color: Colors.white),
+                    keyboardType: TextInputType.phone,
                     validator: (v) => v == null || v.isEmpty
                         ? 'Please enter your phone number' : null,
                   ),
@@ -325,6 +416,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fillColor: Colors.white10,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderSide:
@@ -336,14 +428,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     validator: (v) => v == null || v.isEmpty
                         ? 'Please enter your address' : null,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 30),
                   Center(
                     child: ElevatedButton(
-                      onPressed: _saveProfile,
+                      onPressed: _loading ? null : _saveProfile,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE94560),
+                          backgroundColor: const Color(0xFFE94560),
+                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                          textStyle: const TextStyle(fontSize: 16)
                       ),
-                      child: const Text(
+                      child: _loading
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.0,))
+                          : const Text(
                         'Save Profile',
                         style: TextStyle(color: Colors.white),
                       ),
