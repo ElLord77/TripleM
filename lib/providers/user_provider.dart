@@ -8,12 +8,16 @@ class UserProvider with ChangeNotifier {
   String _fullName = "";
   String _phoneNumber = "";
   String _address = "";
+  String _plateNumber = "";
+
 
   String get username => _username;
   String get userPassword => _userPassword;
   String get fullName => _fullName;
   String get phoneNumber => _phoneNumber;
   String get address => _address;
+  String get plateNumber => _plateNumber;
+
 
   void setUsername(String username) {
     _username = username;
@@ -40,6 +44,11 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void setPlateNumber(String plate) {
+    _plateNumber = plate;
+    notifyListeners();
+  }
+
   /// Clears all user-related fields (useful on logout)
   void clearUserData() {
     _username = "";
@@ -47,6 +56,7 @@ class UserProvider with ChangeNotifier {
     _fullName = "";
     _phoneNumber = "";
     _address = "";
+    _plateNumber = "";
     notifyListeners();
   }
 }

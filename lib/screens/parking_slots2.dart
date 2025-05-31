@@ -1,7 +1,7 @@
 // lib/screens/parking_slots2.dart
 
 import 'package:flutter/material.dart';
-import 'package:gdp_app/screens/booking_screen.dart';
+import 'package:gdp_app/screens/slot_status_screen.dart'; // Ensure this path is correct
 
 class ParkingSlots2 extends StatelessWidget {
   final String imagePath = 'images/2.jpg'; // Your Level 2 image
@@ -110,7 +110,7 @@ class RotatedSlotButton extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => BookingScreen(slotName: slotName),
+              builder: (context) => SlotStatusScreen(slotName: slotName),
             ),
           );
         },

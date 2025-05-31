@@ -46,6 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '173139534080',
     projectId: 'triple-m-garage',
     authDomain: 'triple-m-garage.firebaseapp.com',
+    databaseURL: 'https://triple-m-garage-default-rtdb.firebaseio.com',
     storageBucket: 'triple-m-garage.firebasestorage.app',
     measurementId: 'G-DH5RR84MQ4',
   );
@@ -55,6 +56,7 @@ class DefaultFirebaseOptions {
     appId: '1:173139534080:android:330b71a39bb5755d0453e5',
     messagingSenderId: '173139534080',
     projectId: 'triple-m-garage',
+    databaseURL: 'https://triple-m-garage-default-rtdb.firebaseio.com',
     storageBucket: 'triple-m-garage.firebasestorage.app',
   );
 
@@ -63,6 +65,7 @@ class DefaultFirebaseOptions {
     appId: '1:173139534080:ios:e2ec07e90e219c7d0453e5',
     messagingSenderId: '173139534080',
     projectId: 'triple-m-garage',
+    databaseURL: 'https://triple-m-garage-default-rtdb.firebaseio.com',
     storageBucket: 'triple-m-garage.firebasestorage.app',
     iosBundleId: 'com.example.gdpApp',
   );
@@ -72,6 +75,7 @@ class DefaultFirebaseOptions {
     appId: '1:173139534080:ios:e2ec07e90e219c7d0453e5',
     messagingSenderId: '173139534080',
     projectId: 'triple-m-garage',
+    databaseURL: 'https://triple-m-garage-default-rtdb.firebaseio.com',
     storageBucket: 'triple-m-garage.firebasestorage.app',
     iosBundleId: 'com.example.gdpApp',
   );
@@ -82,7 +86,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '173139534080',
     projectId: 'triple-m-garage',
     authDomain: 'triple-m-garage.firebaseapp.com',
+    databaseURL: 'https://triple-m-garage-default-rtdb.firebaseio.com',
     storageBucket: 'triple-m-garage.firebasestorage.app',
     measurementId: 'G-88ZWRCF3LZ',
   );
+
 }

@@ -1,15 +1,12 @@
-// lib/screens/payment_confirmation_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:gdp_app/providers/user_provider.dart';
-import 'package:gdp_app/providers/booking_provider.dart';
+import 'package:gdp_app/services/firestore_service.dart';
 import 'package:gdp_app/screens/thank_you_screen.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
-import 'package:gdp_app/services/firestore_service.dart';
 
-class PaymentConfirmationScreen extends StatelessWidget {
+class PaymentConfirmationScreen extends StatefulWidget {
   final String slotName;
   final DateTime startDateTime;
   final DateTime endDateTime;
@@ -23,37 +20,74 @@ class PaymentConfirmationScreen extends StatelessWidget {
     required this.cost,
   }) : super(key: key);
 
+  @override
+  State<PaymentConfirmationScreen> createState() => _PaymentConfirmationScreenState();
+}
+
+class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
+  bool _isProcessing = false;
+
   /// Compute days/hours difference
   Map<String, int> _computeDaysHours(DateTime start, DateTime end) {
     final diff = end.difference(start);
-    final totalDays = diff.inDays;
-    final leftoverHours = diff.inHours % 24;
     return {
-      'days': totalDays,
-      'hours': leftoverHours,
+      'days': diff.inDays,
+      'hours': diff.inHours % 24,
     };
+  }
+
+  Future<void> _confirmPayment() async {
+    setState(() => _isProcessing = true);
+    try {
+      final userEmail = Provider.of<UserProvider>(context, listen: false).username;
+
+      // Reserve slot in Firestore
+      await FirestoreService().reserveSlotDateTime(
+        slotName: widget.slotName,
+        startDateTime: widget.startDateTime,
+        endDateTime: widget.endDateTime,
+        userEmail: userEmail,
+      );
+
+      // Navigate to Thank You screen
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ThankYouScreen(
+            slotName: widget.slotName,
+            startDateTime: widget.startDateTime,
+            endDateTime: widget.endDateTime,
+            amount: widget.cost,
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Duration
-    final bookingDuration = _computeDaysHours(startDateTime, endDateTime);
-    final days = bookingDuration['days'] ?? 0;
-    final hours = bookingDuration['hours'] ?? 0;
+    final duration = _computeDaysHours(widget.startDateTime, widget.endDateTime);
+    final days = duration['days']!;
+    final hours = duration['hours']!;
     final durationText = (days == 0 && hours == 0)
-        ? "Less than an hour"
-        : "$days days and $hours hours";
+        ? 'Less than an hour'
+        : '$days days and $hours hours';
 
-    // Format date/time
-    final startFmt = DateFormat("yyyy-MM-dd h:mm a").format(startDateTime);
-    final endFmt   = DateFormat("yyyy-MM-dd h:mm a").format(endDateTime);
+    final startFmt = DateFormat('yyyy-MM-dd h:mm a').format(widget.startDateTime);
+    final endFmt = DateFormat('yyyy-MM-dd h:mm a').format(widget.endDateTime);
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset('images/logo.jpg', height: 30),
             const SizedBox(width: 8),
@@ -70,78 +104,52 @@ class PaymentConfirmationScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'You are booking Slot: $slotName',
+                'Booking Slot: ${widget.slotName}',
                 style: const TextStyle(fontSize: 18, color: Color(0xFFF9F9F9)),
               ),
               const SizedBox(height: 10),
               Text(
                 'Start: $startFmt\n'
-                    'End: $endFmt\n'
+                    'End:   $endFmt\n'
                     'Duration: $durationText\n'
-                    'Cost: £$cost',
+                    'Cost: £${widget.cost.toStringAsFixed(2)}',
                 style: const TextStyle(fontSize: 16, color: Color(0xFFF9F9F9)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    // 1) Get user email from provider
-                    final userEmail = Provider.of<UserProvider>(context, listen: false).username;
-
-                    // 2) Reserve slot in Firestore
-                    final docId = await FirestoreService().reserveSlotDateTime(
-                      slotName: slotName,
-                      startDateTime: startDateTime,
-                      endDateTime: endDateTime,
-                      userEmail: userEmail,
-                    );
-
-                    // 3) Add to local BookingProvider
-                    if (docId.isNotEmpty) {
-                      final newBooking = Booking(
-                        docId: docId,
-                        slotName: slotName,
-                        startDateTime: startDateTime,
-                        endDateTime: endDateTime,
-                      );
-                      Provider.of<BookingProvider>(context, listen: false).addBooking(newBooking);
-                    }
-
-                    // 4) Navigate to ThankYouScreen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ThankYouScreen(
-                          slotName: slotName,
-                          startDateTime: startDateTime,
-                          endDateTime: endDateTime,
-                          amount: cost,
-                        ),
-                      ),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.toString())),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF5733),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isProcessing ? null : _confirmPayment,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF5733),
+                  ),
+                  child: _isProcessing
+                      ? const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                  )
+                      : const Text('Confirm'),
                 ),
-                child: const Text('Confirm'),
               ),
               const SizedBox(height: 10),
-              // Cancel Button
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const DashboardScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-                child: const Text('Cancel'),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isProcessing
+                      ? null
+                      : () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DashboardScreen(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                  child: const Text('Cancel'),
+                ),
               ),
             ],
           ),

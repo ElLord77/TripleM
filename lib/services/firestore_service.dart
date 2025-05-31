@@ -1,7 +1,6 @@
 // lib/services/firestore_service.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:gdp_app/providers/booking_provider.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -34,7 +33,7 @@ class FirestoreService {
       }
 
       final existingStart = (data['startDateTime'] as Timestamp).toDate();
-      final existingEnd   = (data['endDateTime']   as Timestamp).toDate();
+      final existingEnd = (data['endDateTime'] as Timestamp).toDate();
 
       if (_timesOverlap(existingStart, existingEnd, startDateTime, endDateTime)) {
         throw Exception(
@@ -45,40 +44,20 @@ class FirestoreService {
 
     // 3) If no overlap, create a new doc
     final docRef = await _db.collection('bookings').add({
-      'slotName':      slotName,
-      'startDateTime': startDateTime,  // Will store as a Firestore Timestamp
-      'endDateTime':   endDateTime,
-      'userId':        userEmail,
-      'reservedAt':    FieldValue.serverTimestamp(),
+      'slotName': slotName,
+      'startDateTime': startDateTime, // Will store as a Firestore Timestamp
+      'endDateTime': endDateTime,
+      'userId': userEmail,
+      'reservedAt': FieldValue.serverTimestamp(),
     });
 
     return docRef.id;
   }
 
-  /// Fetch all bookings for a specific user by email, returning Booking objects
-  Future<List<Booking>> getBookings({required String userEmail}) async {
-    final snapshot = await _db
-        .collection('bookings')
-        .where('userId', isEqualTo: userEmail)
-        .get();
-
-    return snapshot.docs.map((doc) {
-      final data = doc.data();
-
-      // Safely parse Timestamps
-      final startTS = data['startDateTime'] as Timestamp?;
-      final endTS   = data['endDateTime']   as Timestamp?;
-
-      final startDT = startTS != null ? startTS.toDate() : DateTime.now();
-      final endDT   = endTS != null   ? endTS.toDate()   : DateTime.now();
-
-      return Booking(
-        docId:    doc.id,
-        slotName: data['slotName'] ?? '',
-        startDateTime: startDT,
-        endDateTime:   endDT,
-      );
-    }).toList();
+  /// Fetch user profile by email
+  Future<Map<String, dynamic>?> getUserProfileByEmail(String email) async {
+    final docSnap = await _db.collection('users').doc(email).get();
+    return docSnap.data();
   }
 
   /// Create or update a user profile keyed by their email
@@ -94,11 +73,5 @@ class FirestoreService {
       'phoneNumber': phoneNumber,
       'address': address,
     }, SetOptions(merge: true));
-  }
-
-  /// Fetch a user profile by email
-  Future<Map<String, dynamic>?> getUserProfileByEmail(String email) async {
-    final docSnap = await _db.collection('users').doc(email).get();
-    return docSnap.data();
   }
 }

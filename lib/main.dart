@@ -6,7 +6,6 @@ import 'firebase_options.dart';
 import 'package:provider/provider.dart';
 
 // Import your providers
-import 'package:gdp_app/providers/booking_provider.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 
 // Import your initial screen
@@ -21,7 +20,6 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider<BookingProvider>(create: (_) => BookingProvider()),
         ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
       ],
       child: const TripleMGarageApp(),
