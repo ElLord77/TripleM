@@ -21,8 +21,13 @@ class DashboardScreen extends StatelessWidget {
         ? userProvider.fullName
         : 'User';
 
-    final ThemeData theme = Theme.of(context); // Get the current theme
+    final ThemeData theme = Theme.of(context);
     final bool isDarkMode = theme.brightness == Brightness.dark;
+
+    // Theme-specific icon colors (as previously defined)
+    final Color activeIconColor = isDarkMode ? Colors.pink.shade300 : Colors.purple.shade400;
+    final Color avatarIconColor = isDarkMode ? Colors.pink.shade200 : Colors.purple.shade600;
+
 
     return Scaffold(
       appBar: AppBar(
@@ -31,11 +36,11 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Image.asset('images/logo.jpg', height: 30),
             const SizedBox(width: 8),
-            const Text('Dashboard'), // AppBar title text will use AppBarTheme
+            const Text('Dashboard'),
           ],
         ),
         actions: [
-          buildOverflowMenu(context), // Assuming this is correctly implemented
+          buildOverflowMenu(context),
         ],
       ),
       body: SingleChildScrollView(
@@ -51,10 +56,8 @@ class DashboardScreen extends StatelessWidget {
                       ? Colors.white.withOpacity(0.1)
                       : theme.colorScheme.primary.withOpacity(0.1),
                   child: Icon(
-                      Icons.person,
-                      color: isDarkMode
-                          ? Colors.white
-                          : theme.colorScheme.primary,
+                      Icons.account_circle,
+                      color: avatarIconColor,
                       size: 28
                   ),
                 ),
@@ -62,10 +65,8 @@ class DashboardScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Welcome, $displayName!',
-                    // Apply a style that's prominent but uses theme colors
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      // Color is inherited from theme.textTheme.headlineSmall
                     ),
                   ),
                 ),
@@ -75,13 +76,12 @@ class DashboardScreen extends StatelessWidget {
             Wrap(
               spacing: 12,
               runSpacing: 12,
-              alignment: WrapAlignment.start, // Ensures buttons align to start
+              alignment: WrapAlignment.start,
               children: [
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.search),
+                  icon: Icon(Icons.search, color: activeIconColor),
                   label: const Text('Check Availability'),
                   style: ElevatedButton.styleFrom(
-                    // Removed hardcoded backgroundColor to use theme's ElevatedButtonTheme
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -95,7 +95,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.person),
+                  icon: Icon(Icons.person_outline, color: activeIconColor),
                   label: const Text('Profile'),
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
@@ -111,7 +111,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.settings),
+                  icon: Icon(Icons.settings_outlined, color: activeIconColor),
                   label: const Text('Settings'),
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
@@ -127,7 +127,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.payment),
+                  icon: Icon(Icons.payment, color: activeIconColor),
                   label: const Text('Pay Here'),
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
@@ -147,23 +147,21 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 40),
             Center(
               child: Card(
-                // Card color will now be determined by the theme's cardTheme or surfaceColor
-                // Removed: color: Colors.white10,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                elevation: isDarkMode ? 2 : 4, // Slightly different elevation for visual depth
+                elevation: isDarkMode ? 2 : 4,
                 child: ListTile(
                   leading: Icon(
-                    Icons.support_agent,
-                    // Icon color will be inherited from theme's listTileTheme.iconColor or iconTheme.color
+                    Icons.support_agent_outlined,
+                    color: activeIconColor,
                   ),
                   title: const Text(
                     'Contact Us',
-                    style: TextStyle(fontWeight: FontWeight.bold), // Color inherited
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: const Text(
-                    'Need help or have questions? Get in touch.', // Color inherited
+                    'Need help or have questions? Get in touch.',
                   ),
                   onTap: () => Navigator.push(
                     context,
@@ -174,6 +172,39 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 40), // Space before the GIF
+            // --- GIF Placeholder Section ---
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    "LETS'S", // Optional title for the animation
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 10),
+                  Image.asset(
+                    'images/park.gif', // IMPORTANT: Replace with your actual GIF path
+                    height: 150, // Adjust height as needed
+                    // width: 200, // Adjust width as needed
+                    // You can add a gaplessPlayback: true if your GIF is seamless
+                    // gaplessPlayback: true,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Fallback if the GIF fails to load
+                      return Container(
+                        height: 150,
+                        width: 200, // Provide a width for the container if image fails
+                        color: Colors.grey[300],
+                        child: const Center(
+                          child: Text('Animation loading...'),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20), // Space after the GIF
+            // --- End GIF Placeholder Section ---
           ],
         ),
       ),

@@ -5,6 +5,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:provider/provider.dart';
+// Import for ImagePicker functionality (if re-added later)
+// import 'dart:io';
+// import 'package:image_picker/image_picker.dart';
+// import 'package:firebase_storage/firebase_storage.dart';
 
 /// Formatter to convert ASCII digits to Arabic-Indic digits as the user types.
 class ArabicNumbersInputFormatter extends TextInputFormatter {
@@ -33,7 +37,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _profileFormKey = GlobalKey<FormState>();
-  final _passwordFormKey = GlobalKey<FormState>(); // Key for the change password form
+  final _passwordFormKey = GlobalKey<FormState>();
 
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -41,16 +45,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _addressController = TextEditingController();
   List<TextEditingController> _plateControllers = [];
 
-  // Controllers for password change
   final TextEditingController _currentPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmNewPasswordController = TextEditingController();
 
   bool _loading = true;
-  bool _isChangingPassword = false; // For password change loading state
+  bool _isChangingPassword = false;
+  // bool _isUploadingPicture = false; // Re-add if picture functionality is restored
 
+  // File? _imageFile;
+  // String? _profileImageUrl;
+  // final ImagePicker _picker = ImagePicker();
+
+  // Updated Regex:
+  // - 1-4 Arabic letters, with a single space between each if more than one.
+  // - Exactly ONE space as a separator.
+  // - 1-4 Arabic-Indic digits, with a single space between each if more than one.
   final RegExp _plateRegex = RegExp(
-    r'^[\u0621-\u064A](?:\s[\u0621-\u064A]){0,3}\s{2}[\u0660-\u0669](?:\s[\u0660-\u0669]){0,3}$',
+    r'^[\u0621-\u064A](?:\s[\u0621-\u064A]){0,3}\s[\u0660-\u0669](?:\s[\u0660-\u0669]){0,3}$',
     unicode: true,
   );
 
@@ -61,7 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfileData() async {
-    // ... (existing _loadProfileData method remains the same) ...
+    // ... (load profile data logic remains the same) ...
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       if (mounted) setState(() => _loading = false);
@@ -76,6 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _emailController.text = data['email'] ?? '';
         _phoneController.text = data['phoneNumber'] ?? '';
         _addressController.text = data['address'] ?? '';
+        // _profileImageUrl = data['profileImageUrl'] as String?; // Re-add if picture functionality is restored
         final plates = data['plateNumbers'];
         if (plates is List) {
           _plateControllers = plates
@@ -101,6 +114,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Image picking and uploading methods would be here if functionality is restored
+  // _pickImage, _showImageSourceActionSheet, _uploadProfilePicture
+
   void _addPlateField() {
     setState(() {
       _plateControllers.add(TextEditingController());
@@ -108,8 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    // ... (existing _saveProfile method remains largely the same) ...
-    // Ensure you use _profileFormKey for this part
+    // ... (validation for profileFormKey) ...
     if (!_profileFormKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please correct errors in your profile information.')),
@@ -121,18 +136,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     for (var controller in _plateControllers) {
       final value = controller.text.trim();
       if (value.isNotEmpty) {
-        // Debug prints can be removed
-        // print("--- Validating in _saveProfile ---");
-        // print("Original Controller Text: '${controller.text}'");
-        // print("Trimmed Value for Regex: '$value'");
-        // print("Code Units for Regex: ${value.codeUnits}");
-        final bool isMatch = _plateRegex.hasMatch(value);
-        // print("Regex Match: $isMatch with Pattern: ${_plateRegex.pattern}");
-        // print("---------------------------------");
+        // Debug prints from before (can be useful)
+        print("--- Validating in _saveProfile ---");
+        print("Original Controller Text: '${controller.text}'");
+        print("Trimmed Value for Regex: '$value'");
+        print("Code Units for Regex: ${value.codeUnits}");
+        final bool isMatch = _plateRegex.hasMatch(value); // Uses the updated regex
+        print("Regex Match: $isMatch with Pattern: ${_plateRegex.pattern}");
+        print("---------------------------------");
 
         if (!isMatch) {
           allPlatesValid = false;
-          // print("Invalid plate found in _saveProfile (confirmed by detailed check): $value");
+          print("Invalid plate found in _saveProfile: $value");
           break;
         }
       }
@@ -141,16 +156,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!allPlatesValid) {
       if(mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('One or more plate numbers have an invalid format. Use: X X X  Y Y Y Y')),
+          // Updated error message example for clarity
+          const SnackBar(content: Text('Invalid plate format. Use e.g., أ ب ج ١ ٢ ٣ ٤')),
         );
       }
       return;
     }
 
+    // ... (rest of _saveProfile logic: currentUser, loading state, data prep) ...
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
-    if(mounted) setState(() => _loading = true);
+    // Check for loading states related to other async operations if any
+    // bool isOtherOperationLoading = _isUploadingPicture || _isChangingPassword; // Example
+    // if (mounted) setState(() => _loading = !isOtherOperationLoading);
+    if (mounted) setState(() => _loading = true);
+
+
+    // String? newImageUrl = _profileImageUrl; // Re-add if picture functionality is restored
+    // if (_imageFile != null) {
+    //   newImageUrl = await _uploadProfilePicture(currentUser.uid, _imageFile!);
+    //   if (newImageUrl == null) {
+    //     if (mounted) setState(() => _loading = false);
+    //     return;
+    //   }
+    // }
 
     final uid = currentUser.uid;
     final fullName = _fullNameController.text.trim();
@@ -171,7 +201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         for (var doc in conflictQuery.docs) {
           if (doc.id != uid) {
-            final existingPlates = List<String>.from(doc.data()['plateNumbers'] ?? []);
+            final existingPlates = List<String>.from(doc.data()?['plateNumbers'] ?? []);
             final conflictPlates = plates.where((p) => existingPlates.contains(p)).toList();
             if (conflictPlates.isNotEmpty) {
               if(mounted) {
@@ -195,7 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
     }
-    // Save to Firestore... (existing logic)
+
     try {
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'fullName': fullName,
@@ -203,16 +233,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'phoneNumber': phone,
         'address': address,
         'plateNumbers': plates,
+        // 'profileImageUrl': newImageUrl, // Re-add if picture functionality is restored
       }, SetOptions(merge: true));
 
       final userProv = Provider.of<UserProvider>(context, listen: false);
       userProv.setFullName(fullName);
       userProv.setPhoneNumber(phone);
+      // userProv.setAddress(address);
+      // if (newImageUrl != null) {
+      //   // userProv.setProfileImageUrl(newImageUrl);
+      // }
 
       if(mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully!')),
         );
+        // _imageFile = null; // Re-add if picture functionality is restored
       }
     } catch (e) {
       print("Error updating profile: $e");
@@ -229,6 +265,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _changePassword() async {
+    // ... (existing _changePassword method remains the same) ...
     if (!_passwordFormKey.currentState!.validate()) {
       return;
     }
@@ -240,22 +277,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final newPassword = _newPasswordController.text;
 
     if (user == null || user.email == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not found or email is missing.')),
-      );
-      setState(() { _isChangingPassword = false; });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not found or email is missing.')),
+        );
+        setState(() { _isChangingPassword = false; });
+      }
       return;
     }
 
     try {
-      // Re-authenticate the user
       AuthCredential credential = EmailAuthProvider.credential(
         email: user.email!,
         password: currentPassword,
       );
       await user.reauthenticateWithCredential(credential);
-
-      // If re-authentication is successful, update the password
       await user.updatePassword(newPassword);
 
       if (mounted) {
@@ -265,14 +301,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _currentPasswordController.clear();
         _newPasswordController.clear();
         _confirmNewPasswordController.clear();
+        FocusScope.of(context).unfocus();
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         String errorMessage = "Failed to change password.";
-        if (e.code == 'wrong-password') {
+        if (e.code == 'wrong-password' || e.code == 'ERROR_WRONG_PASSWORD') {
           errorMessage = 'Incorrect current password.';
-        } else if (e.code == 'weak-password') {
-          errorMessage = 'The new password is too weak.';
+        } else if (e.code == 'weak-password' || e.code == 'ERROR_WEAK_PASSWORD') {
+          errorMessage = 'The new password is too weak (must be at least 6 characters).';
         } else {
           errorMessage = e.message ?? errorMessage;
         }
@@ -293,15 +330,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-
   @override
   void dispose() {
+    // ... (dispose method remains the same) ...
     _fullNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
     for (var c in _plateControllers) c.dispose();
-    // Dispose new password controllers
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmNewPasswordController.dispose();
@@ -310,7 +346,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ... (build method UI structure remains the same, but check TextFormField validator for plates) ...
     final ThemeData theme = Theme.of(context);
+    // final bool isDarkMode = theme.brightness == Brightness.dark; // Only needed if _profilePictureWidget logic is restored
+
+    // Widget profilePictureWidget; // Re-add if picture functionality is restored
+    // if (_imageFile != null) { ... } else if (_profileImageUrl != null) { ... } else { ... }
+
 
     return Scaffold(
       appBar: AppBar(
@@ -322,14 +364,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-      body: _loading
+      body: (_loading && !_isChangingPassword)
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ... (existing My Car Plates section) ...
+            // Profile Picture Section would be here if restored
             Text(
               'My Car Plates',
               style: theme.textTheme.titleLarge,
@@ -350,7 +392,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           textDirection: TextDirection.rtl,
                           decoration: InputDecoration(
                             labelText: 'Plate ${idx + 1}',
-                            hintText: 'مثال: أ ب ج  ١ ٢ ٣ ٤',
+                            hintText: 'مثال: أ ب ج ١ ٢ ٣ ٤', // Hint for single space separator and spaced numbers
                             hintTextDirection: TextDirection.rtl,
                           ),
                           validator: (v) {
@@ -358,7 +400,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             if (trimmedValueOriginalValidator.isNotEmpty) {
                               final bool isMatchOriginalValidator = _plateRegex.hasMatch(trimmedValueOriginalValidator);
                               if (!isMatchOriginalValidator) {
-                                return 'Invalid format. Use: X X X  Y Y Y Y';
+                                // Error message reflecting single space separator and spaced numbers
+                                return 'Invalid format. Use: X X X Y Y Y Y';
                               }
                             }
                             return null;
@@ -398,10 +441,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 10),
             Form(
-              key: _profileFormKey, // Use _profileFormKey here
+              key: _profileFormKey,
               child: Column(
                 children: [
-                  // ... (existing Full Name, Email, Phone, Address TextFormFields) ...
+                  // ... (Full Name, Email, Phone, Address TextFormFields remain the same) ...
                   TextFormField(
                     controller: _fullNameController,
                     decoration: const InputDecoration(labelText: 'Full Name'),
@@ -433,8 +476,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 30),
                   Center(
                     child: ElevatedButton(
-                      onPressed: _loading ? null : _saveProfile,
-                      child: _loading && !_isChangingPassword // Show loader only if saving profile, not changing password
+                      onPressed: (_loading || _isChangingPassword) ? null : _saveProfile,
+                      child: _loading && !_isChangingPassword
                           ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.0,))
                           : const Text('Save Profile'),
                     ),
@@ -445,16 +488,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             Divider(color: theme.dividerColor, height: 40),
 
-            // --- Change Password Section ---
             Text(
               'Change Password',
               style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: 10),
             Form(
-              key: _passwordFormKey, // Use the new key for this form
+              key: _passwordFormKey,
               child: Column(
                 children: [
+                  // ... (Current Password, New Password, Confirm New Password TextFormFields remain the same) ...
                   TextFormField(
                     controller: _currentPasswordController,
                     decoration: const InputDecoration(labelText: 'Current Password'),
@@ -499,7 +542,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 30),
                   Center(
                     child: ElevatedButton(
-                      onPressed: _isChangingPassword ? null : _changePassword,
+                      onPressed: (_isChangingPassword || _loading) ? null : _changePassword,
                       child: _isChangingPassword
                           ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.0,))
                           : const Text('Change Password'),
@@ -508,7 +551,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20), // Add some padding at the bottom
+            const SizedBox(height: 20),
           ],
         ),
       ),
