@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_credit_card/flutter_credit_card.dart';
+import 'package:flutter_credit_card/flutter_credit_card.dart'; // Ensure this package is in pubspec.yaml
 // Import the PaymentConfirmationScreen that expects documentId
 import 'package:gdp_app/screens/payment_confirmation_screen.dart';
 
@@ -13,7 +13,7 @@ class PaymentScreen extends StatefulWidget {
   final String endDate;
   final String endTime;
   final double fee;
-  final String documentId; // <-- This parameter is required
+  final String documentId;
 
   const PaymentScreen({
     Key? key,
@@ -23,7 +23,7 @@ class PaymentScreen extends StatefulWidget {
     required this.endDate,
     required this.endTime,
     required this.fee,
-    required this.documentId, // <-- Make sure this is in your constructor
+    required this.documentId,
   }) : super(key: key);
 
   @override
@@ -72,7 +72,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
         return;
       }
 
-      // Navigate to PaymentConfirmationScreen, passing necessary identifiers
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -80,8 +79,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             slotName: widget.slotName,
             startDateTime: startDT,
             endDateTime: endDT,
-            documentId: widget.documentId, // Pass the documentId
-            // 'cost' parameter is not passed here, as PaymentConfirmationScreen fetches its own fee
+            documentId: widget.documentId,
           ),
         ),
       );
@@ -90,19 +88,32 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDarkMode = theme.brightness == Brightness.dark;
+
+    final TextStyle formTextStyle = TextStyle(
+        fontSize: 16,
+        color: theme.textTheme.bodyMedium?.color
+    );
+
+    final Color creditCardBackgroundColor = isDarkMode ? const Color(0xFF3A3A3A) : const Color(0xFFD0D0D0);
+    final Color creditCardWidgetTextColor = isDarkMode ? Colors.white : Colors.black;
+
+    // Define a general TextStyle for elements on the CreditCardWidget
+    final TextStyle cardWidgetTextStyle = TextStyle(
+        color: creditCardWidgetTextColor,
+        fontSize: 15 // You can adjust this base font size
+    );
+
+
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F3460),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset('images/logo.jpg', height: 30),
             const SizedBox(width: 8),
-            const Text(
-              'Payment Method',
-              style: TextStyle(color: Color(0xFFF9F9F9)),
-            ),
+            const Text('Payment Method'),
           ],
         ),
         centerTitle: true,
@@ -111,10 +122,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
                 "Amount to Pay: £${widget.fee.toStringAsFixed(2)}",
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)
+                style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)
             ),
             const SizedBox(height: 20),
 
@@ -132,19 +144,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       cardHolderName: cardHolderName,
                       cvvCode: cvvCode,
                       showBackView: isCvvFocused,
-                      cardBgColor: const Color(0xFFC0C0C0),
+                      cardBgColor: creditCardBackgroundColor,
+
+                      // Style for the actual data text (card number, expiry, name)
+                      // and hopefully the labels if they inherit from this.
+                      textStyle: cardWidgetTextStyle,
+
+                      // Removed labelTextColor as it was causing an error
+                      // labelTextColor: creditCardWidgetTextColor,
+
                       obscureCardNumber: false,
                       obscureCardCvv: false,
                       isHolderNameVisible: true,
                       onCreditCardWidgetChange: (brand) {},
                     ),
-                    const Positioned(
+                    Positioned(
                       top: 20,
                       right: 30,
                       child: Text(
                         'business',
                         style: TextStyle(
-                          color: Colors.black,
+                          color: creditCardWidgetTextColor,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -164,51 +184,36 @@ class _PaymentScreenState extends State<PaymentScreen> {
               onCreditCardModelChange: _onCreditCardModelChange,
               obscureCvv: false,
               obscureNumber: false,
-              inputConfiguration: const InputConfiguration(
-                cardNumberDecoration: InputDecoration(
-                  border: OutlineInputBorder(),
+              inputConfiguration: InputConfiguration(
+                cardNumberDecoration: const InputDecoration(
                   labelText: 'Number',
                   hintText: 'XXXX XXXX XXXX XXXX',
                 ),
-                expiryDateDecoration: InputDecoration(
-                  border: OutlineInputBorder(),
+                expiryDateDecoration: const InputDecoration(
                   labelText: 'Expired Date',
                   hintText: 'XX/XX',
                 ),
-                cvvCodeDecoration: InputDecoration(
-                  border: OutlineInputBorder(),
+                cvvCodeDecoration: const InputDecoration(
                   labelText: 'CVV',
                   hintText: 'XXX',
                 ),
-                cardHolderDecoration: InputDecoration(
-                  border: OutlineInputBorder(),
+                cardHolderDecoration: const InputDecoration(
                   labelText: 'Card Holder',
                 ),
-                cardNumberTextStyle: TextStyle(fontSize: 16, color: Colors.white),
-                cardHolderTextStyle: TextStyle(fontSize: 16, color: Colors.white),
-                expiryDateTextStyle: TextStyle(fontSize: 16, color: Colors.white),
-                cvvCodeTextStyle: TextStyle(fontSize: 16, color: Colors.white),
+                cardNumberTextStyle: formTextStyle,
+                cardHolderTextStyle: formTextStyle,
+                expiryDateTextStyle: formTextStyle,
+                cvvCodeTextStyle: formTextStyle,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF5733),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
                 onPressed: _onPayNow,
                 child: const Text(
                   'Pay Now',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
                 ),
               ),
             ),

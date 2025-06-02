@@ -32,23 +32,27 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final _profileFormKey = GlobalKey<FormState>();
+  final _passwordFormKey = GlobalKey<FormState>(); // Key for the change password form
+
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   List<TextEditingController> _plateControllers = [];
-  bool _loading = true;
 
-  // Updated Regex:
-  // - 1-4 Arabic letters, with a single space between each if more than one.
-  // - Exactly TWO spaces as a separator.
-  // - 1-4 Arabic-Indic digits, with a single space between each if more than one.
+  // Controllers for password change
+  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmNewPasswordController = TextEditingController();
+
+  bool _loading = true;
+  bool _isChangingPassword = false; // For password change loading state
+
   final RegExp _plateRegex = RegExp(
-    r'^[\u0621-\u064A](?:\s[\u0621-\u064A]){0,3}\s[\u0660-\u0669](?:\s[\u0660-\u0669]){0,3}$', // Changed \s{2} to \s
+    r'^[\u0621-\u064A](?:\s[\u0621-\u064A]){0,3}\s{2}[\u0660-\u0669](?:\s[\u0660-\u0669]){0,3}$',
     unicode: true,
   );
-
 
   @override
   void initState() {
@@ -57,9 +61,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfileData() async {
+    // ... (existing _loadProfileData method remains the same) ...
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
       return;
     }
     try {
@@ -81,9 +86,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _emailController.text = currentUser.email ?? _emailController.text;
     } catch (e) {
       print("Error loading profile data: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load profile data: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load profile data: ${e.toString()}')),
+        );
+      }
     } finally {
       if (_plateControllers.isEmpty) {
         _plateControllers.add(TextEditingController());
@@ -101,7 +108,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) {
+    // ... (existing _saveProfile method remains largely the same) ...
+    // Ensure you use _profileFormKey for this part
+    if (!_profileFormKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please correct errors in your profile information.')),
       );
@@ -112,34 +121,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     for (var controller in _plateControllers) {
       final value = controller.text.trim();
       if (value.isNotEmpty) {
-        // Debug prints (can be removed after confirming fix)
-        print("--- Validating in _saveProfile ---");
-        print("Original Controller Text: '${controller.text}'");
-        print("Trimmed Value for Regex: '$value'");
-        print("Code Units for Regex: ${value.codeUnits}");
+        // Debug prints can be removed
+        // print("--- Validating in _saveProfile ---");
+        // print("Original Controller Text: '${controller.text}'");
+        // print("Trimmed Value for Regex: '$value'");
+        // print("Code Units for Regex: ${value.codeUnits}");
         final bool isMatch = _plateRegex.hasMatch(value);
-        print("Regex Match: $isMatch with Pattern: ${_plateRegex.pattern}");
-        print("---------------------------------");
+        // print("Regex Match: $isMatch with Pattern: ${_plateRegex.pattern}");
+        // print("---------------------------------");
 
         if (!isMatch) {
           allPlatesValid = false;
-          print("Invalid plate found in _saveProfile (confirmed by detailed check): $value");
+          // print("Invalid plate found in _saveProfile (confirmed by detailed check): $value");
           break;
         }
       }
     }
 
     if (!allPlatesValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('One or more plate numbers have an invalid format. Use: X X X  Y Y Y Y')), // Updated example
-      );
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('One or more plate numbers have an invalid format. Use: X X X  Y Y Y Y')),
+        );
+      }
       return;
     }
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
-    setState(() => _loading = true);
+    if(mounted) setState(() => _loading = true);
 
     final uid = currentUser.uid;
     final fullName = _fullNameController.text.trim();
@@ -150,6 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .where((p) => p.isNotEmpty)
         .toList();
 
+    // Plate uniqueness check... (existing logic)
     if (plates.isNotEmpty) {
       try {
         final conflictQuery = await FirebaseFirestore.instance
@@ -183,7 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
     }
-
+    // Save to Firestore... (existing logic)
     try {
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'fullName': fullName,
@@ -216,6 +228,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _changePassword() async {
+    if (!_passwordFormKey.currentState!.validate()) {
+      return;
+    }
+    if (!mounted) return;
+    setState(() { _isChangingPassword = true; });
+
+    final user = FirebaseAuth.instance.currentUser;
+    final currentPassword = _currentPasswordController.text;
+    final newPassword = _newPasswordController.text;
+
+    if (user == null || user.email == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not found or email is missing.')),
+      );
+      setState(() { _isChangingPassword = false; });
+      return;
+    }
+
+    try {
+      // Re-authenticate the user
+      AuthCredential credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      await user.reauthenticateWithCredential(credential);
+
+      // If re-authentication is successful, update the password
+      await user.updatePassword(newPassword);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password updated successfully!')),
+        );
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmNewPasswordController.clear();
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        String errorMessage = "Failed to change password.";
+        if (e.code == 'wrong-password') {
+          errorMessage = 'Incorrect current password.';
+        } else if (e.code == 'weak-password') {
+          errorMessage = 'The new password is too weak.';
+        } else {
+          errorMessage = e.message ?? errorMessage;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('An unexpected error occurred: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() { _isChangingPassword = false; });
+      }
+    }
+  }
+
+
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -223,11 +301,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneController.dispose();
     _addressController.dispose();
     for (var c in _plateControllers) c.dispose();
+    // Dispose new password controllers
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmNewPasswordController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -238,7 +322,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-      backgroundColor: const Color(0xFF16213E),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -246,13 +329,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            // ... (existing My Car Plates section) ...
+            Text(
               'My Car Plates',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+              style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: 10),
             Column(
@@ -270,36 +350,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           textDirection: TextDirection.rtl,
                           decoration: InputDecoration(
                             labelText: 'Plate ${idx + 1}',
-                            labelStyle: const TextStyle(color: Colors.white70),
-                            hintText: 'مثال: أ ب ج  ١ ٢ ٣ ٤', // Updated hint for two spaces
-                            hintStyle: const TextStyle(color: Colors.white54),
+                            hintText: 'مثال: أ ب ج  ١ ٢ ٣ ٤',
                             hintTextDirection: TextDirection.rtl,
-                            filled: true,
-                            fillColor: Colors.white10,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Color(0xFFE94560)),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Colors.redAccent),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            focusedErrorBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Colors.redAccent, width: 2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
                           ),
-                          style: const TextStyle(color: Colors.white),
                           validator: (v) {
                             final trimmedValueOriginalValidator = v?.trim() ?? '';
                             if (trimmedValueOriginalValidator.isNotEmpty) {
                               final bool isMatchOriginalValidator = _plateRegex.hasMatch(trimmedValueOriginalValidator);
                               if (!isMatchOriginalValidator) {
-                                return 'Invalid format. Use: X X X  Y Y Y Y'; // Updated error message
+                                return 'Invalid format. Use: X X X  Y Y Y Y';
                               }
                             }
                             return null;
@@ -327,127 +386,129 @@ class _ProfileScreenState extends State<ProfileScreen> {
               alignment: Alignment.centerRight,
               child: TextButton.icon(
                 onPressed: _addPlateField,
-                icon: const Icon(Icons.add, color: Colors.white),
-                label:
-                const Text('Add Plate', style: TextStyle(color: Colors.white)),
+                icon: const Icon(Icons.add),
+                label: const Text('Add Plate'),
               ),
             ),
-            const Divider(color: Colors.white38, height: 40),
-            const Text(
+            Divider(color: theme.dividerColor, height: 40),
+
+            Text(
               'Edit Profile Information',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+              style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: 10),
             Form(
-              key: _formKey,
+              key: _profileFormKey, // Use _profileFormKey here
               child: Column(
                 children: [
+                  // ... (existing Full Name, Email, Phone, Address TextFormFields) ...
                   TextFormField(
                     controller: _fullNameController,
-                    decoration: InputDecoration(
-                      labelText: 'Full Name',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      filled: true,
-                      fillColor: Colors.white10,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide:
-                        const BorderSide(color: Color(0xFFE94560)),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    validator: (v) => v == null || v.isEmpty
-                        ? 'Please enter your full name' : null,
+                    decoration: const InputDecoration(labelText: 'Full Name'),
+                    validator: (v) => v == null || v.isEmpty ? 'Please enter your full name' : null,
                   ),
                   const SizedBox(height: 15),
                   TextFormField(
                     controller: _emailController,
                     decoration: InputDecoration(
                       labelText: 'Email',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      filled: true,
-                      fillColor: Colors.white24,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
+                      fillColor: theme.brightness == Brightness.dark ? Colors.white.withOpacity(0.1) : Colors.grey[200],
                     ),
-                    style: const TextStyle(color: Colors.white70),
+                    style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)),
                     readOnly: true,
                   ),
                   const SizedBox(height: 15),
                   TextFormField(
                     controller: _phoneController,
-                    decoration: InputDecoration(
-                      labelText: 'Phone Number',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      filled: true,
-                      fillColor: Colors.white10,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide:
-                        const BorderSide(color: Color(0xFFE94560)),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(labelText: 'Phone Number'),
                     keyboardType: TextInputType.phone,
-                    validator: (v) => v == null || v.isEmpty
-                        ? 'Please enter your phone number' : null,
+                    validator: (v) => v == null || v.isEmpty ? 'Please enter your phone number' : null,
                   ),
                   const SizedBox(height: 15),
                   TextFormField(
                     controller: _addressController,
-                    decoration: InputDecoration(
-                      labelText: 'Address',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      filled: true,
-                      fillColor: Colors.white10,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide:
-                        const BorderSide(color: Color(0xFFE94560)),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    validator: (v) => v == null || v.isEmpty
-                        ? 'Please enter your address' : null,
+                    decoration: const InputDecoration(labelText: 'Address'),
+                    validator: (v) => v == null || v.isEmpty ? 'Please enter your address' : null,
                   ),
                   const SizedBox(height: 30),
                   Center(
                     child: ElevatedButton(
                       onPressed: _loading ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE94560),
-                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                          textStyle: const TextStyle(fontSize: 16)
-                      ),
-                      child: _loading
+                      child: _loading && !_isChangingPassword // Show loader only if saving profile, not changing password
                           ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.0,))
-                          : const Text(
-                        'Save Profile',
-                        style: TextStyle(color: Colors.white),
-                      ),
+                          : const Text('Save Profile'),
                     ),
                   ),
                 ],
               ),
             ),
+
+            Divider(color: theme.dividerColor, height: 40),
+
+            // --- Change Password Section ---
+            Text(
+              'Change Password',
+              style: theme.textTheme.titleLarge,
+            ),
+            const SizedBox(height: 10),
+            Form(
+              key: _passwordFormKey, // Use the new key for this form
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _currentPasswordController,
+                    decoration: const InputDecoration(labelText: 'Current Password'),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your current password';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  TextFormField(
+                    controller: _newPasswordController,
+                    decoration: const InputDecoration(labelText: 'New Password'),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a new password';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  TextFormField(
+                    controller: _confirmNewPasswordController,
+                    decoration: const InputDecoration(labelText: 'Confirm New Password'),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please confirm your new password';
+                      }
+                      if (value != _newPasswordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 30),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: _isChangingPassword ? null : _changePassword,
+                      child: _isChangingPassword
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.0,))
+                          : const Text('Change Password'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20), // Add some padding at the bottom
           ],
         ),
       ),

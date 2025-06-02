@@ -1,25 +1,24 @@
 // lib/screens/payment_confirmation_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart'; // Keep if UserProvider is still needed for userEmail
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:gdp_app/providers/user_provider.dart';
-// import 'package:gdp_app/services/firestore_service.dart'; // FirestoreService might not be needed if updating directly
+import 'package:gdp_app/providers/user_provider.dart'; // Keep if used
 import 'package:gdp_app/screens/thank_you_screen.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
 
 class PaymentConfirmationScreen extends StatefulWidget {
-  final String slotName; // Still useful for display
+  final String slotName;
   final DateTime startDateTime;
   final DateTime endDateTime;
-  final String documentId; // <-- This parameter is required
+  final String documentId;
 
   const PaymentConfirmationScreen({
     Key? key,
     required this.slotName,
     required this.startDateTime,
     required this.endDateTime,
-    required this.documentId, // <-- Make sure this is in your constructor
+    required this.documentId,
   }) : super(key: key);
 
   @override
@@ -44,7 +43,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
     try {
       DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
           .collection('parking_records')
-          .doc(widget.documentId) // Use documentId to fetch the specific record
+          .doc(widget.documentId)
           .get();
 
       if (docSnapshot.exists && docSnapshot.data() != null) {
@@ -90,19 +89,16 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
 
     setState(() => _isProcessing = true);
     try {
-      // final userEmail = Provider.of<UserProvider>(context, listen: false).username; // May not be needed here
+      // final userEmail = Provider.of<UserProvider>(context, listen: false).username; // If needed for logging or receipt
 
-      // Update the existing parking record to mark it as paid
       await FirebaseFirestore.instance
           .collection('parking_records')
-          .doc(widget.documentId) // Use the documentId passed to this screen
+          .doc(widget.documentId)
           .update({
-        'status': 'paid', // Or your desired status for a paid record
+        'status': 'paid',
         'payment_timestamp': FieldValue.serverTimestamp(),
-        // You can add other payment-related details here, e.g., transactionId
       });
 
-      // Navigate to Thank You screen
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -127,6 +123,9 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context); // Get current theme
+    final TextTheme textTheme = theme.textTheme;
+
     final duration = _computeDaysHours(widget.startDateTime, widget.endDateTime);
     final days = duration['days']!;
     final hours = duration['hours']!;
@@ -138,17 +137,19 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
     final endFmt = DateFormat('yyyy-MM-dd h:mm a').format(widget.endDateTime);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
+      // backgroundColor will be inherited from theme.scaffoldBackgroundColor
+      // backgroundColor: const Color(0xFF1A1A2E), // Removed
       appBar: AppBar(
-        automaticallyImplyLeading: false, // Or true if you want a back button
+        automaticallyImplyLeading: false,
         title: Row(
           children: [
             Image.asset('images/logo.jpg', height: 30),
             const SizedBox(width: 8),
-            const Text('Payment Confirmation'),
+            const Text('Payment Confirmation'), // Text color from AppBarTheme
           ],
         ),
-        backgroundColor: const Color(0xFF0F3460),
+        // backgroundColor will be inherited from theme.appBarTheme.backgroundColor
+        // backgroundColor: const Color(0xFF0F3460), // Removed
         centerTitle: true,
       ),
       body: Center(
@@ -158,11 +159,11 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
             ? Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('Could not load payment details.', style: TextStyle(color: Colors.red, fontSize: 16)),
+            Text('Could not load payment details.', style: TextStyle(color: theme.colorScheme.error, fontSize: 16)),
             const SizedBox(height: 10),
             ElevatedButton(onPressed: _fetchParkingFeeAndDetails, child: const Text('Retry')),
             const SizedBox(height: 10),
-            ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Go Back')),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Go Back')), // TextButton uses theme
           ],
         )
             : Padding(
@@ -172,15 +173,16 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
             children: [
               Text(
                 'Booking Slot: ${widget.slotName}',
-                style: const TextStyle(fontSize: 18, color: Color(0xFFF9F9F9)),
+                style: textTheme.titleLarge, // Use theme's text style
               ),
               const SizedBox(height: 10),
               Text(
                 'Start: $startFmt\n'
                     'End:   $endFmt\n'
                     'Duration: $durationText\n'
+                // Using bodyMedium for details, and titleMedium for cost
                     'Cost: £${_fetchedFee!.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 16, color: Color(0xFFF9F9F9)),
+                style: textTheme.bodyMedium?.copyWith(height: 1.5), // Added line height
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
@@ -188,15 +190,20 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isProcessing ? null : _confirmPaymentAndUpdateRecord, // Call updated method
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5733),
-                  ),
+                  onPressed: _isProcessing ? null : _confirmPaymentAndUpdateRecord,
+                  // Style will come from theme.elevatedButtonTheme
+                  // style: ElevatedButton.styleFrom(
+                  //   backgroundColor: const Color(0xFFFF5733), // Removed
+                  // ),
                   child: _isProcessing
-                      ? const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ? const SizedBox(
+                    width: 24, height: 24, // Constrain size
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation(Colors.white), // Or use theme.colorScheme.onPrimary
+                      strokeWidth: 2.0,
+                    ),
                   )
-                      : const Text('Confirm Payment'), // Updated button text
+                      : const Text('Confirm Payment'),
                 ),
               ),
               const SizedBox(height: 10),
@@ -207,14 +214,18 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                   onPressed: _isProcessing
                       ? null
                       : () {
-                    Navigator.pushReplacement( // Or pop until dashboard
+                    Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const DashboardScreen(), // Ensure DashboardScreen is imported
+                        builder: (_) => const DashboardScreen(),
                       ),
                     );
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                  // Use a less prominent style for Cancel, or theme's default
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.onSurface.withOpacity(0.12), // Example for a secondary action
+                    foregroundColor: theme.colorScheme.onSurface, // Text color for this button
+                  ),
                   child: const Text('Cancel'),
                 ),
               ),

@@ -1,3 +1,4 @@
+// lib/screens/thank_you_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:gdp_app/screens/dashboard_screen.dart';
@@ -16,7 +17,6 @@ class ThankYouScreen extends StatelessWidget {
     required this.amount,
   }) : super(key: key);
 
-  /// Compute days/hours difference
   Map<String, int> _computeDaysHours(DateTime start, DateTime end) {
     final diff = end.difference(start);
     final totalDays = diff.inDays;
@@ -29,11 +29,12 @@ class ThankYouScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Format the start/end in a readable way
+    final ThemeData theme = Theme.of(context); // Get current theme
+    final TextTheme textTheme = theme.textTheme;
+
     final String startFormatted = DateFormat("yyyy-MM-dd h:mm a").format(startDateTime);
     final String endFormatted   = DateFormat("yyyy-MM-dd h:mm a").format(endDateTime);
 
-    // Compute duration
     final duration = _computeDaysHours(startDateTime, endDateTime);
     final days  = duration['days'] ?? 0;
     final hours = duration['hours'] ?? 0;
@@ -46,7 +47,8 @@ class ThankYouScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
+      // backgroundColor will be inherited from theme.scaffoldBackgroundColor
+      // backgroundColor: const Color(0xFF1A1A2E), // Removed
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Row(
@@ -57,10 +59,11 @@ class ThankYouScreen extends StatelessWidget {
               height: 30,
             ),
             const SizedBox(width: 8),
-            const Text('Thank You'),
+            const Text('Thank You'), // Text color from AppBarTheme
           ],
         ),
-        backgroundColor: const Color(0xFF0F3460),
+        // backgroundColor will be inherited from theme.appBarTheme.backgroundColor
+        // backgroundColor: const Color(0xFF0F3460), // Removed
         centerTitle: true,
       ),
       body: Center(
@@ -69,34 +72,30 @@ class ThankYouScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // (Optional) Thank-you image
               Padding(
                 padding: const EdgeInsets.only(bottom: 20.0),
                 child: Image.asset(
-                  'images/thankyou.jpg',
+                  'images/thankyou.jpg', // Ensure this image looks good on both light/dark backgrounds
                   height: 150,
                 ),
               ),
-              const Text(
+              Text(
                 'Thank you for your payment!',
-                style: TextStyle(
-                  fontSize: 22,
-                  color: Color(0xFFF9F9F9),
+                // Removed explicit color, will use theme's textTheme
+                style: textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 60),
               Text(
-                'Your parking slot ($slotName) has been booked.\n'
+                'Your parking slot ($slotName) payment has been confirmed.\n' // Updated text slightly
                     'Start: $startFormatted\n'
                     'End:   $endFormatted\n'
                     'Duration: $durationText\n'
-                    'Total Cost: £$amount',
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFFF9F9F9),
-                ),
+                    'Total Cost: £${amount.toStringAsFixed(2)}', // Or use your currency symbol
+                // Removed explicit color, will use theme's textTheme
+                style: textTheme.bodyLarge?.copyWith(height: 1.5),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
@@ -110,10 +109,11 @@ class ThankYouScreen extends StatelessWidget {
                         (Route<dynamic> route) => false,
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF5733),
-                ),
-                child: const Text('Go Back to Dashboard'),
+                // Style will come from theme.elevatedButtonTheme
+                // style: ElevatedButton.styleFrom(
+                //   backgroundColor: const Color(0xFFFF5733), // Removed
+                // ),
+                child: const Text('Go Back to Dashboard'), // Text color from ElevatedButtonTheme
               ),
             ],
           ),

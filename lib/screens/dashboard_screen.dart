@@ -7,17 +7,12 @@ import 'package:gdp_app/screens/profile_screen.dart';
 import 'package:gdp_app/screens/settings_screen.dart';
 import 'package:gdp_app/screens/contact_us_screen.dart';
 import 'package:gdp_app/utils/menu_utils.dart'; // Optional overflow menu
-// Import for the new PayParkingScreen (create this file next)
+// Import for the PayParkingScreen
 import 'package:gdp_app/screens/pay_parking_screen.dart';
 
 
-// ArabicNumbersInputFormatter and Firestore logic will be moved to PayParkingScreen
-// If ArabicNumbersInputFormatter is used elsewhere, keep it in a shared utils file.
-
-class DashboardScreen extends StatelessWidget { // Changed to StatelessWidget
+class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
-
-  // Dialog and fetching logic removed from here
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +21,9 @@ class DashboardScreen extends StatelessWidget { // Changed to StatelessWidget
         ? userProvider.fullName
         : 'User';
 
+    final ThemeData theme = Theme.of(context); // Get the current theme
+    final bool isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -33,14 +31,14 @@ class DashboardScreen extends StatelessWidget { // Changed to StatelessWidget
           children: [
             Image.asset('images/logo.jpg', height: 30),
             const SizedBox(width: 8),
-            const Text('Dashboard'),
+            const Text('Dashboard'), // AppBar title text will use AppBarTheme
           ],
         ),
         actions: [
-          buildOverflowMenu(context),
+          buildOverflowMenu(context), // Assuming this is correctly implemented
         ],
       ),
-      body: SingleChildScrollView( // Removed Stack as _isLoading is removed
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,17 +47,25 @@ class DashboardScreen extends StatelessWidget { // Changed to StatelessWidget
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: Colors.white12,
-                  child: const Icon(Icons.person, color: Colors.white, size: 28),
+                  backgroundColor: isDarkMode
+                      ? Colors.white.withOpacity(0.1)
+                      : theme.colorScheme.primary.withOpacity(0.1),
+                  child: Icon(
+                      Icons.person,
+                      color: isDarkMode
+                          ? Colors.white
+                          : theme.colorScheme.primary,
+                      size: 28
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Welcome, $displayName!',
-                    style: const TextStyle(
-                      fontSize: 24,
+                    // Apply a style that's prominent but uses theme colors
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      // Color is inherited from theme.textTheme.headlineSmall
                     ),
                   ),
                 ),
@@ -69,15 +75,17 @@ class DashboardScreen extends StatelessWidget { // Changed to StatelessWidget
             Wrap(
               spacing: 12,
               runSpacing: 12,
+              alignment: WrapAlignment.start, // Ensures buttons align to start
               children: [
                 ElevatedButton.icon(
                   icon: const Icon(Icons.search),
                   label: const Text('Check Availability'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F3460),
+                    // Removed hardcoded backgroundColor to use theme's ElevatedButtonTheme
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   onPressed: () => Navigator.push(
                     context,
@@ -90,10 +98,10 @@ class DashboardScreen extends StatelessWidget { // Changed to StatelessWidget
                   icon: const Icon(Icons.person),
                   label: const Text('Profile'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F3460),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   onPressed: () => Navigator.push(
                     context,
@@ -106,10 +114,10 @@ class DashboardScreen extends StatelessWidget { // Changed to StatelessWidget
                   icon: const Icon(Icons.settings),
                   label: const Text('Settings'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F3460),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   onPressed: () => Navigator.push(
                     context,
@@ -118,15 +126,14 @@ class DashboardScreen extends StatelessWidget { // Changed to StatelessWidget
                     ),
                   ),
                 ),
-                // --- Updated Pay Here Button ---
                 ElevatedButton.icon(
                   icon: const Icon(Icons.payment),
                   label: const Text('Pay Here'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A5F7A), // Slightly different color for distinction
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   onPressed: () {
                     Navigator.push(
@@ -135,25 +142,28 @@ class DashboardScreen extends StatelessWidget { // Changed to StatelessWidget
                     );
                   },
                 ),
-                // ------------------------------
               ],
             ),
             const SizedBox(height: 40),
             Center(
               child: Card(
-                color: Colors.white10,
+                // Card color will now be determined by the theme's cardTheme or surfaceColor
+                // Removed: color: Colors.white10,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
+                elevation: isDarkMode ? 2 : 4, // Slightly different elevation for visual depth
                 child: ListTile(
-                  leading: const Icon(Icons.support_agent, color: Colors.white),
+                  leading: Icon(
+                    Icons.support_agent,
+                    // Icon color will be inherited from theme's listTileTheme.iconColor or iconTheme.color
+                  ),
                   title: const Text(
                     'Contact Us',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold), // Color inherited
                   ),
                   subtitle: const Text(
-                    'Need help or have questions? Get in touch.',
-                    style: TextStyle(color: Colors.white70),
+                    'Need help or have questions? Get in touch.', // Color inherited
                   ),
                   onTap: () => Navigator.push(
                     context,
@@ -167,7 +177,6 @@ class DashboardScreen extends StatelessWidget { // Changed to StatelessWidget
           ],
         ),
       ),
-      // Removed loading indicator overlay as _isLoading is removed
     );
   }
 }
