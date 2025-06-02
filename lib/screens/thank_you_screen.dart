@@ -32,11 +32,13 @@ class ThankYouScreen extends StatelessWidget {
     final ThemeData theme = Theme.of(context); // Get current theme
     final TextTheme textTheme = theme.textTheme;
 
-    final String startFormatted = DateFormat("yyyy-MM-dd h:mm a").format(startDateTime);
-    final String endFormatted   = DateFormat("yyyy-MM-dd h:mm a").format(endDateTime);
+    final String startFormatted = DateFormat("yyyy-MM-dd h:mm a").format(
+        startDateTime);
+    final String endFormatted = DateFormat("yyyy-MM-dd h:mm a").format(
+        endDateTime);
 
     final duration = _computeDaysHours(startDateTime, endDateTime);
-    final days  = duration['days'] ?? 0;
+    final days = duration['days'] ?? 0;
     final hours = duration['hours'] ?? 0;
 
     String durationText;
@@ -75,7 +77,8 @@ class ThankYouScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 20.0),
                 child: Image.asset(
-                  'images/thankyou.jpg', // Ensure this image looks good on both light/dark backgrounds
+                  'images/thankyou.jpg',
+                  // Ensure this image looks good on both light/dark backgrounds
                   height: 150,
                 ),
               ),
@@ -93,7 +96,8 @@ class ThankYouScreen extends StatelessWidget {
                     'Start: $startFormatted\n'
                     'End:   $endFormatted\n'
                     'Duration: $durationText\n'
-                    'Total Cost: £${amount.toStringAsFixed(2)}', // Or use your currency symbol
+                    'Total Cost: £${amount.toStringAsFixed(2)}',
+                // Or use your currency symbol
                 // Removed explicit color, will use theme's textTheme
                 style: textTheme.bodyLarge?.copyWith(height: 1.5),
                 textAlign: TextAlign.center,
@@ -113,7 +117,8 @@ class ThankYouScreen extends StatelessWidget {
                 // style: ElevatedButton.styleFrom(
                 //   backgroundColor: const Color(0xFFFF5733), // Removed
                 // ),
-                child: const Text('Go Back to Dashboard'), // Text color from ElevatedButtonTheme
+                child: const Text(
+                    'Go Back to Dashboard'), // Text color from ElevatedButtonTheme
               ),
             ],
           ),
