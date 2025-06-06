@@ -69,34 +69,56 @@ class _ContactScreenState extends State<ContactScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final ThemeData theme = Theme.of(context); // Get theme if needed for specific overrides
+    final ThemeData theme = Theme.of(context); // Get current theme
 
     return Scaffold(
-      appBar: AppBar( // AppBar styling will come from main.dart's AppBarTheme
+      appBar: AppBar(
         title: Row(
           children: [
             Image.asset('images/logo.jpg', height: 30),
             const SizedBox(width: 8),
-            const Text("Contact Us"), // Text color will come from AppBarTheme
+            const Text("Contact Us"),
           ],
         ),
       ),
-      // scaffoldBackgroundColor will come from main.dart
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch, // Make button stretch
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // --- Added GIF ---
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 20.0), // Add some space below GIF
+                  child: Image.asset(
+                    'images/contact.gif', // IMPORTANT: Ensure this path is correct
+                    height: 150, // Adjust height as needed
+                    // width: 200, // Optionally set width
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Fallback if the GIF fails to load
+                      return Container(
+                        height: 150,
+                        // width: 200,
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: Text('Contact animation...'),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              // --- End GIF ---
+
               // Name
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration( // Uses global inputDecorationTheme
+                decoration: const InputDecoration(
                   labelText: 'Name',
-                  // labelStyle: TextStyle(color: Color(0xFFF9F9F9)), // Removed
                 ),
-                // style: const TextStyle(color: Color(0xFFF9F9F9)), // Removed, will use theme's textTheme
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return "Name is required";
@@ -109,11 +131,9 @@ class _ContactScreenState extends State<ContactScreen> {
               // Email
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration( // Uses global inputDecorationTheme
+                decoration: const InputDecoration(
                   labelText: 'Email',
-                  // labelStyle: TextStyle(color: Color(0xFFF9F9F9)), // Removed
                 ),
-                // style: const TextStyle(color: Color(0xFFF9F9F9)), // Removed
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -130,13 +150,12 @@ class _ContactScreenState extends State<ContactScreen> {
               // Message
               TextFormField(
                 controller: _messageController,
-                decoration: const InputDecoration( // Uses global inputDecorationTheme
+                decoration: const InputDecoration(
                   labelText: 'Message',
-                  // labelStyle: TextStyle(color: Color(0xFFF9F9F9)), // Removed
+                  alignLabelWithHint: true, // Good for multi-line fields
                 ),
-                // style: const TextStyle(color: Color(0xFFF9F9F9)), // Removed
                 maxLines: 5,
-                minLines: 3, // Ensure a decent minimum height
+                minLines: 3,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return "Message is required";
@@ -148,8 +167,9 @@ class _ContactScreenState extends State<ContactScreen> {
 
               ElevatedButton(
                 onPressed: _onSubmit,
-                // Button style will come from main.dart's elevatedButtonTheme
-                // child's Text color will also come from elevatedButtonTheme's foregroundColor
+                style: ElevatedButton.styleFrom( // Ensure button style is consistent or from theme
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
                 child: const Text('Submit'),
               ),
             ],

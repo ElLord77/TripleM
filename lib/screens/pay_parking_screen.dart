@@ -1,10 +1,16 @@
 // lib/screens/pay_parking_screen.dart
 import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart'; // Only if ArabicNumbersInputFormatter was here
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import 'package:gdp_app/screens/payment_screen.dart';
+
+// Helper function to normalize plate numbers (if you decide to use it here too)
+// String _normalizePlateNumber(String plate) {
+//   return plate.replaceAll(RegExp(r'\s+'), '');
+// }
 
 class PayParkingScreen extends StatefulWidget {
   const PayParkingScreen({Key? key}) : super(key: key);
@@ -18,7 +24,7 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
   List<String> _userPlates = [];
   String? _selectedPlate;
   Map<String, dynamic>? _parkingSessionData;
-  String? _parkingSessionDocId; // To store the document ID
+  String? _parkingSessionDocId;
   bool _isFetchingRecord = false;
 
   @override
@@ -28,14 +34,13 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
   }
 
   Future<void> _fetchUserPlates() async {
-    // ... (this method remains the same as before) ...
     if (!mounted) return;
     setState(() {
       _isLoading = true;
       _userPlates = [];
       _selectedPlate = null;
       _parkingSessionData = null;
-      _parkingSessionDocId = null; // Reset doc ID
+      _parkingSessionDocId = null;
     });
 
     final user = FirebaseAuth.instance.currentUser;
@@ -97,15 +102,21 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
     setState(() {
       _isFetchingRecord = true;
       _parkingSessionData = null;
-      _parkingSessionDocId = null; // Reset doc ID
+      _parkingSessionDocId = null;
     });
 
-    String plateToFetch = _selectedPlate!;
+    String selectedPlateWithSpaces = _selectedPlate!;
+    // Normalize if your parking_records store normalized plates
+    // String normalizedPlateToQuery = _normalizePlateNumber(selectedPlateWithSpaces);
+    String plateToQuery = selectedPlateWithSpaces; // Assuming direct match for now, or use normalized
+
+    print("PayParkingScreen: Selected plate (display): '$selectedPlateWithSpaces'");
+    print("PayParkingScreen: Plate for query: '$plateToQuery'");
 
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
           .collection('parking_records')
-          .where('plate_number', isEqualTo: plateToFetch)
+          .where('plate_number', isEqualTo: plateToQuery)
           .orderBy('entry_time', descending: true)
           .limit(1)
           .get();
@@ -115,14 +126,14 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
         if (mounted) {
           setState(() {
             _parkingSessionData = doc.data() as Map<String, dynamic>;
-            _parkingSessionDocId = doc.id; // Store the document ID
+            _parkingSessionDocId = doc.id;
             print("PayParkingScreen: Fetched _parkingSessionData: $_parkingSessionData with ID: $_parkingSessionDocId");
           });
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('No parking record found for plate: $plateToFetch that requires payment.')),
+            SnackBar(content: Text('No parking record found for plate: $selectedPlateWithSpaces')),
           );
         }
       }
@@ -143,21 +154,19 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
   }
 
   void _navigateToPaymentScreen() {
-    if (_parkingSessionData == null || _parkingSessionDocId == null) { // Check for doc ID too
+    if (_parkingSessionData == null || _parkingSessionDocId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No parking session data or ID to proceed.')),
       );
       return;
     }
 
-    final String plateNumber = _parkingSessionData!['plate_number'] as String? ?? 'N/A';
+    final String plateNumberForDisplay = _selectedPlate ?? _parkingSessionData!['plate_number'] as String? ?? 'N/A';
     final Timestamp? entryTimestamp = _parkingSessionData!['entry_time'] as Timestamp?;
     final Timestamp? exitTimestamp = _parkingSessionData!['exit_time'] as Timestamp?;
 
     final dynamic rawFee = _parkingSessionData!['fee'];
-    print("PayParkingScreen: Raw fee from Firestore: $rawFee (Type: ${rawFee.runtimeType})");
     final double feeFromDb = (rawFee ?? 0.0).toDouble();
-    print("PayParkingScreen: feeFromDb being passed to PaymentScreen: $feeFromDb");
 
     if (entryTimestamp == null || exitTimestamp == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -181,13 +190,13 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => PaymentScreen(
-          slotName: plateNumber,
+          slotName: plateNumberForDisplay,
           startDate: startDate,
           startTime: startTime,
           endDate: endDate,
           endTime: endTime,
           fee: feeFromDb,
-          documentId: _parkingSessionDocId!, // Pass the document ID
+          documentId: _parkingSessionDocId!,
         ),
       ),
     );
@@ -195,104 +204,125 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ... (build method remains largely the same, ensure it uses the state variables correctly) ...
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pay for Parking'),
       ),
       body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(semanticsLabel: "Loading your plates..."))
-                : _userPlates.isEmpty
-                ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('No car plates registered to your account.', textAlign: TextAlign.center),
-                    const SizedBox(height:10),
-                    ElevatedButton(onPressed: (){ Navigator.pop(context);}, child: const Text("Go Back"))
-                  ],
-                )
-            )
-                : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                const Text(
-                  'Select your car plate to find your parking record:',
-                  style: TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 15),
-                DropdownButtonFormField<String>(
-                  value: _selectedPlate,
-                  hint: const Text('Select Plate'),
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 15.0)
-                  ),
-                  items: _userPlates.map((String plate) {
-                    return DropdownMenuItem<String>(
-                      value: plate,
-                      child: Text(plate), // Removed textDirection: TextDirection.rtl
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedPlate = newValue;
-                      _parkingSessionData = null;
-                      _parkingSessionDocId = null; // Reset doc ID when plate changes
-                    });
-                  },
-                  validator: (value) => value == null ? 'Please select a plate' : null,
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.search),
-                  label: const Text('Find Record'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: (_selectedPlate == null || _isFetchingRecord) ? null : _fetchParkingDetailsForSelectedPlate,
-                ),
-                const SizedBox(height: 30),
-                if (_parkingSessionData != null)
-                  Card(
-                    elevation: 3,
+          SingleChildScrollView( // Ensures content is scrollable
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(semanticsLabel: "Loading your plates..."))
+                  : _userPlates.isEmpty
+                  ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('No car plates registered to your account.', textAlign: TextAlign.center),
+                      const SizedBox(height:10),
+                      ElevatedButton(onPressed: (){ Navigator.pop(context);}, child: const Text("Go Back"))
+                    ],
+                  )
+              )
+                  : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  // --- Added GIF Placeholder Here ---
+                  Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Parking Record Details:',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 10),
-                          Text('Plate Number: ${_parkingSessionData!['plate_number'] ?? 'N/A'}'),
-                          Text('Entry Time: ${(_parkingSessionData!['entry_time'] as Timestamp?)?.toDate().toLocal().toString().substring(0,16) ?? 'N/A'}'),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Fee: \$${(_parkingSessionData!['fee'] ?? 0.0).toDouble().toStringAsFixed(2)}',
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
-                          ),
-                          const SizedBox(height: 20),
-                          Center(
-                            child: ElevatedButton(
-                              onPressed: _navigateToPaymentScreen,
-                              child: const Text('Confirm and Proceed to Payment'),
-                            ),
-                          ),
-                        ],
+                      padding: const EdgeInsets.symmetric(vertical: 20.0),
+                      child: Image.asset(
+                        'images/pay.gif', // IMPORTANT: Replace with your GIF path
+                        height: 120,
+                        width: 500,// Adjust size as needed
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 120,
+                            // width: 150, // Optionally set width
+                            color: Colors.grey[200],
+                            child: const Center(child: Text('Animation here')),
+                          );
+                        },
                       ),
                     ),
                   ),
-              ],
+                  // --- End GIF Placeholder ---
+                  const Text(
+                    'Select your car plate to find your parking record:',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 15),
+                  DropdownButtonFormField<String>(
+                    value: _selectedPlate,
+                    hint: const Text('Select Plate'),
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 15.0)
+                    ),
+                    items: _userPlates.map((String plate) {
+                      return DropdownMenuItem<String>(
+                        value: plate,
+                        child: Text(plate),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedPlate = newValue;
+                        _parkingSessionData = null;
+                        _parkingSessionDocId = null;
+                      });
+                    },
+                    validator: (value) => value == null ? 'Please select a plate' : null,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.search),
+                    label: const Text('Find Record'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: (_selectedPlate == null || _isFetchingRecord) ? null : _fetchParkingDetailsForSelectedPlate,
+                  ),
+                  const SizedBox(height: 30),
+                  if (_parkingSessionData != null)
+                    Card(
+                      elevation: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Parking Record Details:',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 10),
+                            Text('Plate Number: ${_parkingSessionData!['plate_number'] ?? 'N/A'}'),
+                            Text('Entry Time: ${(_parkingSessionData!['entry_time'] as Timestamp?)?.toDate().toLocal().toString().substring(0,16) ?? 'N/A'}'),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Fee: \$${(_parkingSessionData!['fee'] ?? 0.0).toDouble().toStringAsFixed(2)}',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
+                            ),
+                            const SizedBox(height: 20),
+                            Center(
+                              child: ElevatedButton(
+                                onPressed: _navigateToPaymentScreen,
+                                child: const Text('Confirm and Proceed to Payment'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
-          if (_isLoading || _isFetchingRecord)
+          if ((_isLoading && _userPlates.isEmpty) || _isFetchingRecord) // Show general loading overlay
             Container(
               color: Colors.black.withOpacity(0.3),
               child: const Center(
