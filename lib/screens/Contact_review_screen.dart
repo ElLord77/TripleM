@@ -59,13 +59,15 @@ class ContactReviewScreen extends StatelessWidget {
                   if (userProvider.username.isNotEmpty) {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const DashboardScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const DashboardScreen()),
                     );
                   } else {
                     // If not signed in, go to HomeScreen
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const HomeScreen()),
                     );
                   }
                 },
