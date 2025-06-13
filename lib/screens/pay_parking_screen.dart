@@ -1,16 +1,10 @@
 // lib/screens/pay_parking_screen.dart
 import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart'; // Only if ArabicNumbersInputFormatter was here
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import 'package:gdp_app/screens/payment_screen.dart';
-
-// Helper function to normalize plate numbers (if you decide to use it here too)
-// String _normalizePlateNumber(String plate) {
-//   return plate.replaceAll(RegExp(r'\s+'), '');
-// }
 
 class PayParkingScreen extends StatefulWidget {
   const PayParkingScreen({Key? key}) : super(key: key);
@@ -105,13 +99,7 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
       _parkingSessionDocId = null;
     });
 
-    String selectedPlateWithSpaces = _selectedPlate!;
-    // Normalize if your parking_records store normalized plates
-    // String normalizedPlateToQuery = _normalizePlateNumber(selectedPlateWithSpaces);
-    String plateToQuery = selectedPlateWithSpaces; // Assuming direct match for now, or use normalized
-
-    print("PayParkingScreen: Selected plate (display): '$selectedPlateWithSpaces'");
-    print("PayParkingScreen: Plate for query: '$plateToQuery'");
+    String plateToQuery = _selectedPlate!;
 
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
@@ -127,13 +115,12 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
           setState(() {
             _parkingSessionData = doc.data() as Map<String, dynamic>;
             _parkingSessionDocId = doc.id;
-            print("PayParkingScreen: Fetched _parkingSessionData: $_parkingSessionData with ID: $_parkingSessionDocId");
           });
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('No parking record found for plate: $selectedPlateWithSpaces')),
+            SnackBar(content: Text('No parking record found for plate: $plateToQuery')),
           );
         }
       }
@@ -153,6 +140,7 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
     }
   }
 
+  // UPDATED: This function now checks the status before navigating
   void _navigateToPaymentScreen() {
     if (_parkingSessionData == null || _parkingSessionDocId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -161,6 +149,22 @@ class _PayParkingScreenState extends State<PayParkingScreen> {
       return;
     }
 
+    // NEW: Check the payment status from the fetched data
+    final String? paymentStatus = _parkingSessionData!['status'] as String?;
+
+    if (paymentStatus == 'paid') {
+      // If already paid, show a message and do not proceed.
+      // UPDATED: The SnackBar now uses a theme-adaptive color.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('You have already paid for this parking session.'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
+      );
+      return; // Stop the function here
+    }
+
+    // If not paid, continue with the existing logic to navigate to the payment screen.
     final String plateNumberForDisplay = _selectedPlate ?? _parkingSessionData!['plate_number'] as String? ?? 'N/A';
     final Timestamp? entryTimestamp = _parkingSessionData!['entry_time'] as Timestamp?;
     final Timestamp? exitTimestamp = _parkingSessionData!['exit_time'] as Timestamp?;

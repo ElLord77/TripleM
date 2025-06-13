@@ -56,7 +56,7 @@ class DashboardScreen extends StatelessWidget {
                       ? Colors.white.withOpacity(0.1)
                       : theme.colorScheme.primary.withOpacity(0.1),
                   child: Icon(
-                      Icons.account_circle,
+                      Icons.account_circle_outlined,
                       color: avatarIconColor,
                       size: 28
                   ),

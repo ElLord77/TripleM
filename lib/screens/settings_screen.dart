@@ -2,14 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:gdp_app/screens/home_screen.dart'; // Used for navigation after delete
 import 'package:gdp_app/screens/sign_in_screen.dart';
 import 'package:gdp_app/providers/user_provider.dart';
 import 'package:gdp_app/providers/theme_provider.dart'; // Import ThemeProvider
-// import 'package:gdp_app/providers/locale_provider.dart'; // For when you add language
 import 'package:provider/provider.dart';
-// import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // For when you add language
-import 'package:gdp_app/utils/menu_utils.dart'; // Optional overflow menu
 
 
 class SettingsScreen extends StatefulWidget {
